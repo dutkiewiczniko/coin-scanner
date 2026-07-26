@@ -7,7 +7,15 @@ build/
 dist/
 .pytest_cache/
 
-# Data and model artefacts — tracked outside git
+# Data and model artefacts — tracked outside git.
+# Photos are matched by extension rather than by folder, so a new batch
+# directory is covered without having to remember to add it. Git stores JPEGs
+# whole with no delta compression, so each one would be carried forever.
+data/**/*.jpg
+data/**/*.jpeg
+data/**/*.png
+data/**/*.heic
+data/**/*.dng
 data/raw/
 data/crops/
 data/out/

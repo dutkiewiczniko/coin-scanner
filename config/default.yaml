@@ -1,56 +1,65 @@
-# euro-vision default configuration.
-# Copy this file, edit, and pass with `euro-vision scan --config my.yaml`.
+# euro-vision configuration, set up for the current rig.
+# Copy and edit, then pass with `euro-vision <cmd> --config my.yaml`.
 
 calibrate:
-  # Rectify each photo to a metric top-down view using four coloured corner dots.
-  # Turn this on once the tray is marked and measured.
-  enabled: false
-  # Clockwise as they appear in the photo, starting from the corner that should
-  # become the top-left of the rectified image. Avoid yellow/orange (collides
-  # with Nordic gold coins) and white/grey (collides with cupronickel).
-  markers: [red, green, blue, magenta]
-  # Measure these centre-to-centre between the dots, not the tray's outer edge.
-  tray_width_mm: 200.0
-  tray_height_mm: 150.0
-  pixels_per_mm: 10.0
+  enabled: true
+  # Clockwise as they appear in a side-a photo, starting from the corner that
+  # becomes the top-left of the rectified image. Orange is separable from Nordic
+  # gold coins on saturation (paint ~190, coins ~100), not on hue alone.
+  markers: [orange, red, blue, green]
+
+  # Marker centre-to-centre, NOT the tray's outer size — the marks sit on the
+  # rim, so the two differ by most of the wall thickness.
+  #
+  # Side A is the larger tray ("Top End Columns", 213.9 x 219.9 outer, 4 mm
+  # wall, R11 corners); side B is Coin Tray v3 (210 x 210 outer). The pair are
+  # deliberately different sizes so one nests inside the other for sliding coins
+  # across, which is why each needs its own figure. Values below are mid-rim,
+  # derived from the CAD; refine with `euro-vision measure`.
+  tray_width_mm: 204.63
+  tray_height_mm: 210.63
+  tray_b_width_mm: 200.73
+  tray_b_height_mm: 200.73
+
+  pixels_per_mm: 12.0
   min_marker_area: 40
+  scale_correction: 1.0
 
 segment:
-  # "hough" needs no training and is the starting point for a fresh tray setup.
-  # Switch to "yolo" once a detector has been trained on real tray images.
-  backend: hough
-  weights: models/segment.pt
-  confidence: 0.25
-  # Tune these two to your camera height — measure a coin in a sample photo.
-  min_radius: 30
-  max_radius: 120
-  min_distance: 60
-  crop_padding: 0.08
-  # When calibrate.enabled is true these replace the pixel radii above, and the
-  # three settings above stop needing to be tuned by hand.
+  # Watershed splits touching coins; hough double-detects them on a full tray.
+  backend: watershed
+  # Otsu reads high on a tray that is ~70% metal and loses the darker coppers.
+  coin_threshold: 75
+  radial_measure: true
+  radial_edge_fraction: 0.40
+  watershed_seed_ratio: 0.62
   min_diameter_mm: 15.0
   max_diameter_mm: 27.0
+  crop_padding: 0.08
 
 normalise:
   size: 224
   circular_mask: true
   rotation_method: none
-  # Set once the tray scale is known; enables physical diameter measurement,
-  # which alone separates most Euro denominations.
-  pixels_per_mm: null
+  pixels_per_mm: null   # derived from the calibration
 
 classify:
-  backend: stub
-  weights: models/denomination.pt
+  backend: diameter
   min_confidence: 0.5
 
 rare:
-  backend: none
-  weights: models/embedding.pt
+  backend: shortlist
+  denominations: [100, 200]
   database: data/rare_coins.sqlite
   flag_threshold: 0.80
-  # Rare variants are most valuable on 1 and 2 euro coins.
-  denominations: [100, 200]
+
+pair:
+  # The trays nest rather than meeting corner to corner, so their frames sit at
+  # a fixed offset. This recovers it from the coins instead of measuring it.
+  auto_align: true
+  max_offset_mm: 8.0
+  max_diameter_delta_mm: 1.2
+  composite_face_px: 320
 
 output_dir: data/out
-save_crops: true
+save_crops: false

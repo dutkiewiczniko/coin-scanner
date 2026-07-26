@@ -83,6 +83,21 @@ euro-vision ingest IMG_0203.jpeg IMG_0205.jpeg --batch 101
 # IMG_0203.jpeg  ->  data/raw/101_b.jpeg
 ```
 
+Match both faces of a batch into one image per coin:
+
+```bash
+euro-vision pair 101
+```
+
+Writes `data/out/batch_101/`:
+
+- `coins/101-001.png` … one image per coin, both faces side by side, captioned
+  with its id, denomination, diameter and position in the tray. Unmatched coins
+  are suffixed `_unpaired`, flagged ones `_flagged`.
+- `manifest.csv` / `manifest.json` — the durable record. Ids run in reading
+  order (`<batch>-<NNN>`) and every coin carries its millimetre position, so a
+  coin can still be identified after the tray is emptied.
+
 Check the scale is true against coins of known size:
 
 ```bash
@@ -252,7 +267,7 @@ Coins are photographed in a custom 3D-printed tray designed to hold coins flat a
 - [ ] Denomination classifier (diameter baseline in place; CNN not trained)
 - [ ] Rare coin database (initial set — seed file is unverified placeholders)
 - [ ] Rare coin detection model (approach undecided)
-- [ ] **Pairing stage** — matching each coin's two faces into one record
+- [x] Pairing — matching each coin's two faces into one record
 
 ### Measured on a real 80-coin tray
 
@@ -266,6 +281,38 @@ Hough's 99 was inflated by double-detections and straddled pairs. The watershed
 misses are almost all worn copper coins, which are as dark as the tray. Closing
 that gap needs a trained detector; see `segment.copper_saturation` for an
 attempted colour fix and why it backfired.
+
+Pairing on the same batch matched 52 of 72, with 60% of pairs agreeing on
+denomination across both faces. Inspection of the composites shows the matches
+are largely correct — national side paired with value side, consistent metal and
+size — and the 1 and 2 euro coins that matter most for rare detection are
+identified correctly.
+
+Getting there needed the two trays' real marker spacing, taken from CAD. They
+are deliberately different sizes so one nests inside the other, and treating
+them as identical put coins up to 6.5 mm from where their other face landed.
+With the correct figures the scale is within 1%.
+
+Beware two misleading metrics here. Agreement between the two faces on
+denomination rewards consistent bias — it was higher (59%) when both faces were
+wrong in the same direction than after the bias was reduced (40%). And per-coin
+nearest-reference matching cannot detect a scale error of about one denomination
+step, since every coin still lands near *a* real diameter; that is why `measure`
+fits the whole population as well.
+
+Recall and matching are limited by how densely the tray is packed:
+
+- **Recall.** A coin missing from either photo cannot be paired, and at 70 and
+  72 of ~80 only about 79% of coins are available to match at all.
+- **Movement.** Coins shift a median of 5.1 mm between the two photos, because a
+  packed tray lets them roll as they are slid across. No constant offset
+  explains it — `pair.auto_align` searches for one and finds too little
+  agreement to apply. Lanes in the tray would constrain this to one dimension
+  and make pairing a sequence alignment per lane instead of a 2D search.
+
+The thresholds are set to prefer an unmatched coin over a wrong one: a gap is
+visible, whereas a bad match silently joins one coin's obverse to another's
+reverse.
 
 ---
 

@@ -69,6 +69,24 @@ class CalibrationError(ValueError):
     """Raised when the tray corners cannot be located or make no sense."""
 
 
+def to_reference_frame(
+    x: float, y: float, side: str, height_px: int
+) -> tuple[float, float]:
+    """Map a rectified point into tray A's frame.
+
+    Tray B's frame is flipped vertically relative to tray A's, because its
+    markers are read in reverse order to keep coin designs unmirrored. Applying
+    this to both faces puts every coin in one coordinate system, where the two
+    faces of the same coin land in nearly the same place.
+
+    This lives at module level so the pairing stage and the calibration share one
+    definition; two copies of this transform would be a silent correctness bug.
+    """
+    if side == SIDE_A:
+        return x, y
+    return x, height_px - y
+
+
 @dataclass
 class Marker:
     colour: str
@@ -98,16 +116,8 @@ class Calibration:
     candidate_counts: dict[str, int] = field(default_factory=dict)
 
     def to_reference_frame(self, x: float, y: float) -> tuple[float, float]:
-        """Map a point in this photo's rectified frame into tray A's frame.
-
-        Tray B's frame is flipped vertically relative to tray A's, because its
-        markers are read in reverse order to keep coin designs unmirrored.
-        Applying this to both faces puts every coin in one coordinate system,
-        where a pair should land in nearly the same place.
-        """
-        if self.side == SIDE_A:
-            return x, y
-        return x, self.height_px - y
+        """Map a point in this photo's rectified frame into tray A's frame."""
+        return to_reference_frame(x, y, self.side, self.height_px)
 
     def edge_lengths_px(self) -> list[float]:
         """Marker-to-marker distances in the original photo, clockwise.
@@ -197,9 +207,18 @@ def compute_calibration(
     markers = _select_corner_markers(candidates, order, image.shape[:2])
     _check_winding(markers, side)
 
+    # Each tray is rectified against its own marker rectangle. Both frames then
+    # measure millimetres from the corner the trays share when sandwiched, so
+    # positions correspond even if the two trays are not the same size.
+    tray_width = config.tray_width_mm
+    tray_height = config.tray_height_mm
+    if side == SIDE_B:
+        tray_width = config.tray_b_width_mm or tray_width
+        tray_height = config.tray_b_height_mm or tray_height
+
     # The output resolution is just a rendering choice and takes no correction.
-    width_px = int(round(config.tray_width_mm * config.pixels_per_mm))
-    height_px = int(round(config.tray_height_mm * config.pixels_per_mm))
+    width_px = int(round(tray_width * config.pixels_per_mm))
+    height_px = int(round(tray_height * config.pixels_per_mm))
 
     # The correction belongs on the measurement scale alone. Markers projecting
     # outward make the marker rectangle span more of the coin plane than its

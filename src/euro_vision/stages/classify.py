@@ -31,6 +31,19 @@ DIAMETERS_MM = {
 _DIAMETER_TOLERANCE_MM = 1.0
 
 
+def nearest_denomination(diameter_mm: float) -> tuple[int, float]:
+    """Closest denomination to a measured diameter, and how far off it is.
+
+    Shared by the diameter classifier and the pairing stage, so a coin cannot be
+    labelled from one face's measurement while its size is reported from
+    another.
+    """
+    return min(
+        ((d, abs(diameter_mm - mm)) for d, mm in DIAMETERS_MM.items()),
+        key=lambda pair: pair[1],
+    )
+
+
 class ClassifyStage(Stage):
     name = "classify"
 
@@ -62,10 +75,7 @@ class ClassifyStage(Stage):
             )
 
         for coin in result.coins:
-            best, gap = min(
-                ((d, abs(coin.diameter_mm - mm)) for d, mm in DIAMETERS_MM.items()),
-                key=lambda pair: pair[1],
-            )
+            best, gap = nearest_denomination(coin.diameter_mm)
             coin.denomination = best
             # Confidence falls off linearly with the size mismatch.
             coin.denomination_confidence = max(

@@ -73,6 +73,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ingest.set_defaults(func=cmd_ingest)
 
+    pair = subparsers.add_parser(
+        "pair", help="match both faces of a batch into per-coin images"
+    )
+    pair.add_argument("batch", help="batch number, e.g. 101")
+    pair.add_argument(
+        "-s", "--source", default="data/raw",
+        help="directory holding <batch>_a and <batch>_b (default: data/raw)",
+    )
+    pair.add_argument("-c", "--config", help="path to a YAML config file")
+    pair.add_argument("-o", "--output", help="override output_dir from config")
+    pair.set_defaults(func=cmd_pair)
+
     measure = subparsers.add_parser(
         "measure", help="measure coin diameters and check the scale is true"
     )
@@ -271,6 +283,77 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pair(args: argparse.Namespace) -> int:
+    """Scan both trays of a batch and match each coin's two faces."""
+    from .pairing import pair_batch, write_batch
+    from .pipeline import Pipeline
+
+    config = load_config(args.config)
+    if args.output:
+        config.output_dir = args.output
+    if not config.calibrate.enabled:
+        print("error: pair needs calibrate.enabled: true — both faces have to "
+              "land in the same metric frame", file=sys.stderr)
+        return 1
+
+    source = Path(args.source)
+    paths = {}
+    for side in ("a", "b"):
+        found = [
+            p for p in sorted(source.iterdir())
+            if p.stem.lower() == f"{args.batch}_{side}"
+            and p.suffix.lower() in IMAGE_SUFFIXES
+        ] if source.is_dir() else []
+        if not found:
+            print(f"error: no {args.batch}_{side} image in {source} — run "
+                  f"`euro-vision ingest` first", file=sys.stderr)
+            return 1
+        paths[side] = found[0]
+
+    pipeline = Pipeline(config)
+    result_a = pipeline.run(paths["a"], side="a")
+    result_b = pipeline.run(paths["b"], side="b")
+
+    batch = pair_batch(args.batch, result_a, result_b, config)
+    written = write_batch(batch, config)
+
+    total = len(batch.coins)
+    paired = len(batch.paired)
+    print(f"batch {args.batch}: {len(result_a.coins)} coins on side a, "
+          f"{len(result_b.coins)} on side b")
+    print(f"  {paired} matched, {len(batch.unpaired)} unmatched "
+          f"-> {total} coin records")
+    if paired:
+        offsets = sorted(c.offset_mm for c in batch.paired)
+        print(f"  match offset: median {offsets[len(offsets)//2]:.2f} mm, "
+              f"worst {offsets[-1]:.2f} mm")
+
+        # Both faces of one coin should classify the same way. This is not proof
+        # a match is right — the classifier has its own error — but a low rate
+        # means either matching or measurement is going wrong, and it is the
+        # only check available without labelling by hand.
+        agree = sum(
+            1 for c in batch.paired
+            if c.face_a.denomination == c.face_b.denomination
+        )
+        print(f"  both faces agree on denomination: {agree}/{paired} "
+              f"({agree / paired:.0%})")
+
+    flagged = [c for c in batch.coins if c.coin.is_flagged]
+    if flagged:
+        print(f"\n  {len(flagged)} flagged for review:")
+        for c in flagged[:10]:
+            print(f"    {c.coin_id}  "
+                  f"{format_denomination(c.coin.denomination) or 'unknown':>7}  "
+                  f"at {c.x_mm:.0f},{c.y_mm:.0f} mm")
+        if len(flagged) > 10:
+            print(f"    ... and {len(flagged) - 10} more")
+
+    print(f"\n  {written['json']}")
+    print(f"  {written['coins']}/")
+    return 0
+
+
 def cmd_measure(args: argparse.Namespace) -> int:
     """Measure every coin and report how far the scale is off.
 
@@ -314,20 +397,42 @@ def cmd_measure(args: argparse.Namespace) -> int:
         if gap <= 0.5:
             ratios.append(DIAMETERS_MM[best] / coin.diameter_mm)
 
-    if not ratios:
-        print("\nNo coin matched a denomination closely enough to calibrate from.")
-        print("The scale is likely off by more than 0.5 mm — measure one coin by "
-              "hand\nand set calibrate.scale_correction to (true mm / measured mm).")
-        return 1
+    print(f"\n{len(ratios)}/{len(coins)} coins matched a denomination "
+          f"unambiguously (within 0.5 mm)")
 
-    suggested = sum(ratios) / len(ratios)
-    spread = max(ratios) - min(ratios)
-    print(f"\n{len(ratios)}/{len(coins)} coins matched unambiguously")
-    print(f"suggested calibrate.scale_correction: "
-          f"{config.calibrate.scale_correction * suggested:.4f}")
-    print(f"spread across coins: {spread * 100:.2f}%"
-          + ("  (consistent — a pure scale error)" if spread < 0.01
-             else "  (inconsistent — suggests lens distortion, not just scale)"))
+    # Fitting the whole population, rather than averaging per-coin ratios, is
+    # the part that can detect a large error. Nearest-reference matching is
+    # self-confirming: if every coin reads a denomination too small, each one
+    # still sits close to *a* real diameter and the scale looks correct.
+    import numpy as np
+
+    measured = np.array([c.diameter_mm for c in coins])
+    reference = np.array(sorted(DIAMETERS_MM.values()))
+    factors = np.arange(0.90, 1.101, 0.002)
+    errors = [
+        np.abs((measured * f)[:, None] - reference[None, :]).min(axis=1).mean()
+        for f in factors
+    ]
+    best = float(factors[int(np.argmin(errors))])
+    at_one = errors[int(np.argmin(np.abs(factors - 1.0)))]
+
+    print(f"\nbest-fit scale over all {len(coins)} coins: {best:.4f} "
+          f"(mean error {min(errors):.3f} mm, vs {at_one:.3f} mm as-is)")
+    print(f"  -> calibrate.scale_correction "
+          f"{config.calibrate.scale_correction * best:.4f}")
+
+    if abs(best - 1.0) > 0.01:
+        print(f"\n  Scale looks {abs(1 - best) * 100:.1f}% out. Check "
+              f"calibrate.tray_width_mm / tray_height_mm against the actual")
+        print(f"  marker centre-to-centre distance — that is the likeliest "
+              f"cause, and this")
+        print(f"  fit is too shallow to replace a real measurement.")
+
+    if ratios:
+        spread = max(ratios) - min(ratios)
+        print(f"\nspread across confidently matched coins: {spread * 100:.2f}%"
+              + ("  (consistent — a pure scale error)" if spread < 0.01
+                 else "  (inconsistent — lens distortion or measurement noise)"))
     return 0
 
 

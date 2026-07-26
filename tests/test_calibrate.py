@@ -267,6 +267,28 @@ def test_rectified_output_has_expected_metric_size(
     assert result.meta["pixels_per_mm"] == calibrate_config.pixels_per_mm
 
 
+def test_second_tray_can_be_a_different_size(calibrate_config, tmp_path):
+    """A mismatched pair must still rectify each tray against its own size."""
+    calibrate_config.tray_b_width_mm = TRAY_W_MM * 1.05
+    calibrate_config.tray_b_height_mm = TRAY_H_MM * 1.10
+
+    image, _ = make_marked_tray(COINS, pixels_per_mm=6.0)
+    cal_a = compute_calibration(image, calibrate_config, "a")
+    cal_b = compute_calibration(cv2.flip(image, 1), calibrate_config, "b")
+
+    scale = calibrate_config.pixels_per_mm
+    assert cal_a.width_px == int(round(TRAY_W_MM * scale))
+    assert cal_b.width_px == int(round(TRAY_W_MM * 1.05 * scale))
+    assert cal_b.height_px == int(round(TRAY_H_MM * 1.10 * scale))
+
+
+def test_second_tray_defaults_to_the_first_size(calibrate_config, tmp_path):
+    image, _ = make_marked_tray(COINS, pixels_per_mm=6.0)
+    cal_a = compute_calibration(image, calibrate_config, "a")
+    cal_b = compute_calibration(cv2.flip(image, 1), calibrate_config, "b")
+    assert (cal_b.width_px, cal_b.height_px) == (cal_a.width_px, cal_a.height_px)
+
+
 def test_scale_correction_changes_measured_diameters(
     calibrate_config, marked_tray_path, tmp_path
 ):

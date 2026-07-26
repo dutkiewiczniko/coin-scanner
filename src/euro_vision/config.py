@@ -26,9 +26,24 @@ class CalibrateConfig:
     markers: list[str] = field(
         default_factory=lambda: ["red", "green", "blue", "magenta"]
     )
-    #: Centre-to-centre distances of the marker rectangle, in millimetres.
+    #: Centre-to-centre distances of the marker rectangle on the first tray, in
+    #: millimetres. Not the tray's outer size — the distance between the painted
+    #: marks, which sit on the rim somewhere between the inner and outer edges.
     tray_width_mm: float = 200.0
     tray_height_mm: float = 150.0
+    #: The same for the second tray. None means both trays are the same size.
+    #:
+    #: The pair are deliberately different sizes here, so that one nests inside
+    #: the other and coins can be slid across. Each tray is therefore rectified
+    #: against its own marker rectangle. Getting this wrong is expensive: a 6.4%
+    #: difference on one axis puts a coin at the tray edge 6.5 mm from where its
+    #: other face landed, which breaks pairing outright.
+    #:
+    #: Because the trays nest rather than sit corner to corner, the two frames
+    #: also differ by a constant translation. That is not something to measure —
+    #: see `pair.auto_align`, which recovers it from the coins themselves.
+    tray_b_width_mm: float | None = None
+    tray_b_height_mm: float | None = None
     #: Resolution of the rectified image. 10 px/mm resolves a 2 euro coin at
     #: roughly 258 px across, which is ample for classification.
     pixels_per_mm: float = 10.0
@@ -81,6 +96,20 @@ class SegmentConfig:
     copper_saturation: int | None = None
     #: Copper coins still need some brightness; this rejects deep shadow.
     copper_min_value: int = 35
+    #: Measure each coin's radius by radial edge search from the watershed
+    #: centre, rather than from the thresholded mask. The threshold strips the
+    #: coin's dim outer rim, which biased diameters low by 1.58 mm on a real
+    #: tray — enough to read a 2 euro coin as a 50c.
+    radial_measure: bool = True
+    #: Rays cast when measuring. More is steadier against touching neighbours,
+    #: which block some directions entirely.
+    radial_rays: int = 64
+    #: Where the coin's edge is taken to be, between tray brightness (0) and
+    #: coin brightness (1). Below 0.5 because both endpoints are biased inward:
+    #: a coin is darker at its rim than at its centre, and the tray sample picks
+    #: up coin edges. Measured on a real tray, 0.50 left diameters 1.58 mm short
+    #: while 0.40 cut that to 0.58 mm. Calibrate with `euro-vision measure`.
+    radial_edge_fraction: float = 0.40
     #: Watershed seeding level, as a fraction of the smallest coin's radius.
     #: Too low and two touching coins share one seed and merge; too high and
     #: small coins get no seed and vanish.
@@ -126,12 +155,56 @@ class RareConfig:
 
 
 @dataclass
+class PairConfig:
+    #: How far apart a coin's two faces may land in the shared frame before the
+    #: match is rejected.
+    #:
+    #: Measured on a densely packed tray: coins really do move, with a median
+    #: displacement of 3.8 mm through the flip, so a tight limit throws away
+    #: good matches. It can afford to be generous because neighbouring coins sit
+    #: about 21 mm apart, so the true partner is far closer than any rival.
+    max_offset_mm: float = 8.0
+    #: Two faces of one coin must measure the same size — an independent check on
+    #: position, since the tightest gap between denominations is 1 mm.
+    #:
+    #: Do not raise this to gain matches. Measured on a real batch, going from
+    #: 1.2 to 2.0 mm took matches from 44 to 65 while denomination agreement went
+    #: only from 26 to 27, meaning almost every extra match was wrong.
+    max_diameter_delta_mm: float = 1.2
+    #: Weight on diameter disagreement when ranking candidate pairs, in mm of
+    #: positional error per mm of size error.
+    diameter_weight: float = 2.0
+    #: Coins within this vertical distance are numbered as one row, so ids run
+    #: in reading order rather than jumping about.
+    row_band_mm: float = 20.0
+    #: Edge length of each face in the composite image.
+    composite_face_px: int = 320
+    #: Recover the constant offset between the two trays' frames from the coin
+    #: positions before matching.
+    #:
+    #: The trays nest inside one another rather than meeting corner to corner,
+    #: so their marker rectangles are offset by a fixed amount that no amount of
+    #: careful marking removes. Every candidate pair votes for the shift that
+    #: would align it; the true shift collects votes from every coin at once,
+    #: while wrong pairings scatter.
+    auto_align: bool = True
+    #: Largest offset between the two frames that will be searched for.
+    align_search_mm: float = 20.0
+    #: A vote counts towards a shift if it agrees within this distance.
+    align_tolerance_mm: float = 2.0
+    #: Minimum share of the smaller side's coins that must agree before the
+    #: estimate is trusted. Below this the shift is more likely noise.
+    align_min_support: float = 0.25
+
+
+@dataclass
 class Config:
     calibrate: CalibrateConfig = field(default_factory=CalibrateConfig)
     segment: SegmentConfig = field(default_factory=SegmentConfig)
     normalise: NormaliseConfig = field(default_factory=NormaliseConfig)
     classify: ClassifyConfig = field(default_factory=ClassifyConfig)
     rare: RareConfig = field(default_factory=RareConfig)
+    pair: PairConfig = field(default_factory=PairConfig)
     #: Where crops and result files are written.
     output_dir: str = "data/out"
     #: Save per-coin crops alongside the results file.
@@ -173,6 +246,7 @@ def load_config(path: str | Path | None = None) -> Config:
         normalise=_build_section(NormaliseConfig, raw.get("normalise", {}), "normalise"),
         classify=_build_section(ClassifyConfig, raw.get("classify", {}), "classify"),
         rare=_build_section(RareConfig, raw.get("rare", {}), "rare"),
+        pair=_build_section(PairConfig, raw.get("pair", {}), "pair"),
         output_dir=raw.get("output_dir", "data/out"),
         save_crops=raw.get("save_crops", True),
     )
