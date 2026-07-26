@@ -1,0 +1,14 @@
+country,denomination,year,variant,name,mintage,est_value_eur,notes,source_url
+# Starter list only — figures below are UNVERIFIED placeholders. Check each
+# against a catalogue (Numista / official mint figures) and fill in source_url
+# before trusting anything here. `euro-vision db seed` loads this file.
+Monaco,200,2007,commemorative,Grace Kelly,,,verify mintage and value,
+Monaco,200,2015,commemorative,Fortress 800th anniversary,,,verify mintage and value,
+Vatican,200,2004,commemorative,World Food Programme,,,verify mintage and value,
+Vatican,200,2005,commemorative,World Youth Day Cologne,,,verify mintage and value,
+San Marino,200,2004,commemorative,Bartolomeo Borghesi,,,verify mintage and value,
+San Marino,200,2006,commemorative,Christopher Columbus,,,verify mintage and value,
+Finland,200,2004,commemorative,EU enlargement,,,verify mintage and value,
+Greece,200,2002,standard,S mint mark (Finland struck),,,mint mark inside a star on the reverse,
+Cyprus,100,2008,standard,First issue,,,early issue — verify scarcity,
+Malta,200,2011,commemorative,First elected representatives,,,verify mintage and value,

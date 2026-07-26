@@ -60,9 +60,174 @@ The rare coin database focuses on the most valuable Euro coins likely to appear 
 |---|---|
 | Coin detection | YOLOv8 |
 | Image processing | OpenCV |
-| Classification | PyTorch / TensorFlow |
+| Classification | PyTorch |
 | Database | SQLite + local image store |
 | Interface | Python CLI / (planned) web UI |
+
+---
+
+## Getting Started
+
+```bash
+python -m venv .venv
+.venv/Scripts/activate        # Windows; use source .venv/bin/activate elsewhere
+pip install -e ".[dev]"       # add ".[ml]" for the YOLO/PyTorch backends
+pytest
+```
+
+Name a batch's two photos, working out which tray each shows from its markers:
+
+```bash
+euro-vision ingest IMG_0203.jpeg IMG_0205.jpeg --batch 101
+# IMG_0205.jpeg  ->  data/raw/101_a.jpeg
+# IMG_0203.jpeg  ->  data/raw/101_b.jpeg
+```
+
+Check the scale is true against coins of known size:
+
+```bash
+euro-vision measure data/raw/101_a.jpeg
+```
+
+Scan a tray image:
+
+```bash
+euro-vision scan data/raw/tray_01.jpg -v
+euro-vision scan data/raw/ --config config/default.yaml
+```
+
+Results are written to `data/out/<image-name>/` as `results.json`, `results.csv`,
+and per-coin crops.
+
+Manage the rare coin database:
+
+```bash
+euro-vision db init
+euro-vision db seed data/rare_coins_seed.csv
+euro-vision db list --denomination 200
+```
+
+### Swappable backends
+
+Every stage runs a backend chosen in `config/default.yaml`, so the pipeline is
+runnable end to end before any model is trained:
+
+| Stage | Backends |
+|---|---|
+| Calibration | off · four coloured corner markers |
+| Segmentation | `watershed` (splits touching coins) · `hough` (spaced coins only) · `yolo` (trained weights) |
+| Normalisation | rotation `none` · `gradient` |
+| Classification | `stub` · `diameter` (physical size) · `cnn` (trained) |
+| Rare detection | `none` · `shortlist` · `embedding`\* · `metadata`\* |
+
+\* Not implemented — the matching strategy is still an open decision.
+
+### Calibration
+
+Each tray carries four coloured dots at its corners. Warping that rectangle to a
+fixed pixel grid removes perspective and tilt and makes the scale exact and
+uniform across the whole tray — a ruler in one spot cannot do that, because a
+phone's wide lens renders coins near the frame edge smaller and slightly
+elliptical.
+
+Check a photo before committing to a scan:
+
+```bash
+euro-vision calibrate data/raw/tray_001_a.jpg -o /tmp/rectified.png
+```
+
+It reports the detected corners, how square-on the shot is, and the resulting
+scale. Then set `calibrate.enabled: true` and measure `tray_width_mm` /
+`tray_height_mm` **centre to centre between the dots**, not across the tray's
+outer edge.
+
+With calibration on, `segment.min_radius`, `segment.max_radius`,
+`segment.min_distance` and `normalise.pixels_per_mm` are all derived from
+millimetres automatically and stop needing to be tuned by hand.
+
+#### Marking the two trays
+
+Coins land face-up at random, so each tray is photographed, then sandwiched with
+a second tray and flipped to expose the other side.
+
+1. Mark tray A's four corners with four distinct colours.
+2. Sandwich the trays exactly as you will when flipping them.
+3. Mark each corner of tray B with the colour of the A corner it is touching.
+
+Tray A's arrangement is free — pick any order round the corners. Tray B's is
+then fully determined by step 3; you do not get to choose both.
+
+**The two trays necessarily photograph with opposite winding.** When the trays
+are face to face their coin-side surfaces have opposite chirality, so if tray A
+reads red → green → blue → magenta clockwise, tray B reads those same colours
+anticlockwise. No marking scheme avoids this. Tray B's markers are therefore
+read in reverse order, which keeps the rectification orientation-preserving —
+mirroring it would flip every coin design and make dates read backwards.
+
+Because both frames are defined by the same physical corner points, a coin keeps
+consistent coordinates across the pair. Tray B's frame comes out flipped
+vertically relative to tray A's, and `Calibration.to_reference_frame` undoes
+that, so paired coins land in the same place.
+
+The pipeline reads the side from the `_a` / `_b` filename suffix, and errors out
+if a photo's winding does not match the side it was given — that catches a photo
+filed under the wrong name, and a tray marked without the touch rule.
+
+Corner markers are chosen as the four blobs enclosing the **largest**
+quadrilateral, not the largest blobs. That handles impostors *inside* the tray —
+a coin matching a marker's hue is enclosed by the real corners, so it loses even
+though it dwarfs a dot.
+
+**It does not handle impostors outside the tray, and cannot.** Anything beyond
+the true corners enlarges the quadrilateral and wins regardless of size; a
+six-pixel speck is enough. Measured on real photos, yellow markers on an oak
+table lost to wood grain. So the requirement is on the colour, not the code:
+
+- **Use colours absent from the background.** Magenta and cyan matched 0.00% of
+  real test photos; blue and green 0.01–0.08%. Yellow matched 0.30% (bare wood,
+  and Nordic gold coins) and red overlaps copper-plated 1c/2c/5c.
+- **Or remove the background problem**: shoot on plain matte neutral card rather
+  than a wooden surface. This also steadies the white balance.
+- Put the corner dots **outside the coin area** so no coin can cover one.
+- Any other marking — a batch number or a tray identifier — must stay **inside**
+  the corner rectangle, or use black or white, which are outside the palette.
+
+Marker height above the coin plane is not worth worrying about: the markers only
+need to be roughly coplanar with the coins. A 1 mm offset on a 200 mm tray shot
+from 400 mm costs about 0.25% of scale, or 0.06 mm on a 2 euro coin. Anything
+left over is absorbed by `calibrate.scale_correction` (see `euro-vision
+measure`).
+
+Name paired photos `tray_001_a.jpg` / `tray_001_b.jpg` — the suffix is how the
+pipeline knows which winding to expect. Photograph **one tray per frame**; two
+trays in one shot puts two dots of each colour in view and calibration will
+reject it as ambiguous.
+
+### Photography
+
+- **No flash.** A phone's flash is a point source next to the lens; on metal it
+  bounces a specular hotspot straight back, blowing out the relief detail that
+  identifies the design. Use fixed diffuse lighting at roughly 45° instead.
+- **Neutral white (~5000K), not warm.** Colour separates the coins into copper,
+  Nordic gold and bimetallic groups, and warm light compresses that distinction.
+- **Lock AE, AWB and focus** before each session, and turn off HDR, night mode
+  and any scene optimisation. Drifting auto white balance does more damage to
+  colour consistency than the choice of lamp.
+- Keep the tray in the central part of the frame and shoot from as far back as
+  practical. A four-point homography corrects perspective but not lens barrel
+  distortion, which is worst at the frame edges.
+- Pour coins sparsely. Touching coins share an edge and cannot be separated by
+  circle detection.
+
+### Why diameter is measured, not detected
+
+Hough circle detection reports the strongest accumulator peak, which is not a
+measurement: it reads a few percent small on a plain disc, and on a bimetallic
+1 or 2 euro coin it can lock onto the inner ring and report a radius 20–30%
+short — reading a 2 euro coin as roughly 19 mm, i.e. a 10 cent piece. Every
+detection is therefore re-measured from the thresholded coin area
+(`r = sqrt(A / pi)`), and accepted only if it falls within the physically
+possible coin size range.
 
 ---
 
@@ -76,13 +241,31 @@ Coins are photographed in a custom 3D-printed tray designed to hold coins flat a
 
 > 🚧 Work in progress
 
-- [ ] Tray segmentation model
-- [ ] Normalisation pipeline
-- [ ] Denomination classifier
-- [ ] Rare coin database (initial set)
-- [ ] Rare coin detection model
-- [ ] CLI interface
-- [ ] Results export
+- [x] End-to-end pipeline skeleton with swappable stage backends
+- [x] Corner-marker calibration and metric rectification
+- [x] Sub-millimetre coin diameter measurement
+- [x] Normalisation pipeline
+- [x] Rare coin database schema
+- [x] CLI interface
+- [x] Results export (JSON / CSV / crops)
+- [ ] Tray segmentation model (Hough baseline in place; YOLO not trained)
+- [ ] Denomination classifier (diameter baseline in place; CNN not trained)
+- [ ] Rare coin database (initial set — seed file is unverified placeholders)
+- [ ] Rare coin detection model (approach undecided)
+- [ ] **Pairing stage** — matching each coin's two faces into one record
+
+### Measured on a real 80-coin tray
+
+| | Hough | Watershed |
+|---|---|---|
+| Coins found (of ~80) | 99 | 70 |
+| Impossible overlapping pairs | 43 | **0** |
+| Scale accuracy | — | within 0.4% |
+
+Hough's 99 was inflated by double-detections and straddled pairs. The watershed
+misses are almost all worn copper coins, which are as dark as the tray. Closing
+that gap needs a trained detector; see `segment.copper_saturation` for an
+attempted colour fix and why it backfired.
 
 ---
 

@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Data and model artefacts — tracked outside git
+data/raw/
+data/crops/
+data/out/
+models/*.pt
+models/*.pth
+*.sqlite
+*.sqlite3
