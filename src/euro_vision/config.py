@@ -163,6 +163,20 @@ class RareConfig:
     flag_threshold: float = 0.80
     #: Only run rare detection on these denominations (cents). Empty = all.
     denominations: list[int] = field(default_factory=lambda: [100, 200])
+    #: Score above which a geometric striking fault is flagged, for the "errors"
+    #: backend. Measured at 0.5 on 145 real faces from a densely packed tray:
+    #: 48% of coins had a measurable outline, none of them was flagged
+    #: spuriously, and a clip covering a fifth of the rim was caught 91% of the
+    #: time (63% at a seventh). The 52% with no measurable outline are coins
+    #: whose neighbours were touching them — a tray with lanes recovers most of
+    #: those. Lower the threshold to see more and review more.
+    error_threshold: float = 0.5
+    #: At or below this mintage an issue counts as scarce. 200,000 sits in the
+    #: gap the data actually shows: the median commemorative is struck 750,000
+    #: times, while the Monaco and Vatican issues that carry a premium are in
+    #: the 15,000-100,000 range. Nothing magic about it — it is the knob to turn
+    #: if the flag list comes out too long or too short.
+    scarce_mintage: int = 200_000
 
 
 @dataclass

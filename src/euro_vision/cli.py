@@ -145,7 +145,22 @@ def build_parser() -> argparse.ArgumentParser:
     db_list.add_argument(
         "-d", "--denomination", type=int, help="filter by value in cents, e.g. 200"
     )
+    db_list.add_argument(
+        "-m", "--max-mintage", type=int,
+        help="only show issues struck this many times or fewer",
+    )
+    db_list.add_argument("-n", "--limit", type=int, default=40)
     db_list.set_defaults(func=cmd_db_list)
+
+    db_import = db_sub.add_parser(
+        "import-commemoratives",
+        help="load every 2 EUR commemorative issue and its mintage from Wikipedia",
+    )
+    db_import.add_argument(
+        "--offline", metavar="JSON",
+        help="parse a previously saved wikitext response instead of fetching",
+    )
+    db_import.set_defaults(func=cmd_db_import_commemoratives)
 
     return parser
 
@@ -633,14 +648,91 @@ def cmd_db_list(args: argparse.Namespace) -> int:
     with RareCoinStore(config.rare.database) as store:
         rows = store.rare_coins(args.denomination)
         if not rows:
-            print("no rare coins in the database — run `euro-vision db seed`")
+            print("no rare coins in the database — run "
+                  "`euro-vision db import-commemoratives`")
             return 0
-        for row in rows:
+        limit = getattr(args, "max_mintage", None)
+        if limit is not None:
+            rows = [r for r in rows if r["mintage"] is not None
+                    and r["mintage"] <= limit]
+        # Scarcest first: the point of the list is to know what to look for.
+        rows = sorted(rows, key=lambda r: (r["mintage"] is None, r["mintage"] or 0))
+        shown = rows[: args.limit]
+        for row in shown:
             value = format_denomination(row["denomination"])
             year = row["year"] or "----"
             mintage = f"{row['mintage']:,}" if row["mintage"] else "unknown mintage"
-            print(f"{value:>7}  {row['country']:<12} {year}  {row['name']}  ({mintage})")
+            print(f"{mintage:>12}  {value:>6}  {row['country']:<22} "
+                  f"{year}  {row['name'][:52]}")
+        if len(rows) > len(shown):
+            print(f"... and {len(rows) - len(shown)} more")
         print(f"\n{len(rows)} coin(s)")
+    return 0
+
+
+def cmd_db_import_commemoratives(args: argparse.Namespace) -> int:
+    """Load every 2 EUR commemorative issue, common and scarce alike.
+
+    Everything is stored rather than only the scarce ones so that rarity stays a
+    query against mintage instead of a list someone has to keep up to date. An
+    issue that is common today is still the row you need in order to say so.
+    """
+    import json as _json
+
+    from .catalogue import (
+        COMMEMORATIVE_DENOMINATION,
+        SOURCE_URL,
+        parse_issues,
+        load_commemoratives,
+    )
+
+    config = load_config(args.config)
+    try:
+        if args.offline:
+            wikitext = _json.loads(
+                Path(args.offline).read_text(encoding="utf-8")
+            )["parse"]["wikitext"]
+            issues = parse_issues(wikitext)
+        else:
+            issues = load_commemoratives()
+    except Exception as exc:  # noqa: BLE001 - network and parsing both surface here
+        print(f"error: could not load the catalogue: {exc}", file=sys.stderr)
+        return 1
+
+    if not issues:
+        print("error: parsed no issues — the page layout may have changed",
+              file=sys.stderr)
+        return 1
+
+    threshold = config.rare.scarce_mintage
+    added = 0
+    with RareCoinStore(config.rare.database) as store:
+        store.init_schema()
+        for issue in issues:
+            store.add_rare_coin(
+                country=issue.country,
+                denomination=COMMEMORATIVE_DENOMINATION,
+                year=issue.year,
+                variant="commemorative",
+                name=issue.feature or issue.name,
+                mintage=issue.mintage,
+                notes=issue.description[:500],
+                source_url=SOURCE_URL,
+            )
+            added += 1
+        total = store.count()
+
+    missing = sum(1 for i in issues if i.mintage is None)
+    scarce = sum(1 for i in issues
+                 if i.mintage is not None and i.mintage <= threshold)
+    print(f"loaded {added} commemorative issues "
+          f"({min(i.year for i in issues)}-{max(i.year for i in issues)}), "
+          f"{total} rows in the database")
+    if missing:
+        print(f"  {missing} without a mintage figure — left NULL rather than guessed")
+    print(f"  {scarce} at or below the {threshold:,} scarcity threshold")
+    print("  mintages are Official Journal planned volumes; actual production "
+          "can deviate")
     return 0
 
 
