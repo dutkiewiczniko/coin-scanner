@@ -98,6 +98,26 @@ Writes `data/out/batch_101/`:
   order (`<batch>-<NNN>`) and every coin carries its millimetre position, so a
   coin can still be identified after the tray is emptied.
 
+Build training data. Two shapes, for two different jobs:
+
+```bash
+# Whole-tray images with boxes, for a YOLO coin detector
+euro-vision export-dataset data/raw/ -o data/dataset
+
+# Per-coin crops in folder-per-class layout, for a denomination classifier
+euro-vision export-dataset data/raw/ --crops -o data/crops
+```
+
+Labels come from the pipeline's own measurements, so they need correcting before
+training — a model fitted to uncorrected output can only repeat its mistakes.
+Crops the pipeline cannot label confidently go to `_unsorted/` rather than being
+guessed at; sorting those is the labelling work.
+
+The crop layout is one folder per class, matching Keras `flow_from_directory`
+and torchvision `ImageFolder`. Public Euro coin datasets use the same shape, so
+they merge by copying class folders in — which matters, because a single batch
+yields only a few dozen examples of the rarer denominations.
+
 Check the scale is true against coins of known size:
 
 ```bash

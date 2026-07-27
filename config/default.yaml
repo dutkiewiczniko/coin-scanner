@@ -31,7 +31,14 @@ segment:
   # Otsu reads high on a tray that is ~70% metal and loses the darker coppers.
   coin_threshold: 75
   radial_measure: true
-  radial_edge_fraction: 0.40
+  # Where along the coin-to-tray brightness drop a ray calls the edge. At 0.40 it
+  # stopped inside the coin's dim outer rim and every coin read 0.52 mm small,
+  # which cost 28 points of denomination accuracy on the graded batch (56% ->
+  # 84%). Measured over 50 hand-graded faces: bias -0.04 mm here, and no scale
+  # correction needed. Do not go below 0.06 — the threshold then sits so close to
+  # tray level that rays run on into touching neighbours and the spread explodes
+  # from 0.45 mm to 2.46 mm.
+  radial_edge_fraction: 0.10
   watershed_seed_ratio: 0.62
   min_diameter_mm: 15.0
   max_diameter_mm: 27.0
@@ -44,7 +51,17 @@ normalise:
   pixels_per_mm: null   # derived from the calibration
 
 classify:
-  backend: diameter
+  # Alloy from colour, then nearest size within that alloy. On 48 hand-graded
+  # coins from batch 101, deciding each coin from both its faces:
+  #   diameter  44/48  91.7%
+  #   metal     46/48  95.8%   (alloy itself 47/48)
+  # A ResNet18 fine-tuned on 2,760 public coin images reached 52% on held-out
+  # designs and 50% here, because a Euro's national side does not carry its
+  # denomination — Ireland uses the same harp on all eight. The model recovered
+  # the alloy (94.3%) and little else, which is exactly what colour gives for
+  # free.
+  backend: metal
+  metal_model: models/metal_group.json
   min_confidence: 0.5
 
 rare:

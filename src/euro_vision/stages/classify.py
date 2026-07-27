@@ -3,14 +3,31 @@
 Backends, in increasing order of what they need from you:
   stub     — does nothing. Keeps the pipeline runnable end-to-end with no models.
   diameter — nearest physical diameter. Needs `normalise.pixels_per_mm` set, but
-             no training at all; every Euro denomination has a distinct diameter,
-             so this is a strong baseline in a fixed-height tray rig.
+             no training at all.
+  metal    — alloy from colour, then nearest diameter within that alloy. Same
+             measurement as `diameter`, but a coin only has to be told from the
+             two others of its own alloy rather than all seven.
   cnn      — trained PyTorch classifier over the eight denominations.
+
+Measured on 48 hand-graded coins from batch 101, deciding each coin once from
+both its faces:
+
+    diameter   44/48   91.7%
+    metal      46/48   95.8%   (alloy itself right 47/48)
+
+The gap is entirely about how much room the measurement has. Across all eight
+denominations the nearest boundary is 0.5 mm away and the measurement's spread is
+0.45 mm; within one alloy the nearest boundary is 1.0 mm away. Same numbers, far
+more margin.
 """
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from ..config import ClassifyConfig
+from ..metal import METAL_GROUP, GroupModel, denominations_in, metal_features
 from ..types import DENOMINATIONS, ScanResult
 from .base import Stage
 
@@ -31,15 +48,25 @@ DIAMETERS_MM = {
 _DIAMETER_TOLERANCE_MM = 1.0
 
 
-def nearest_denomination(diameter_mm: float) -> tuple[int, float]:
+def nearest_denomination(
+    diameter_mm: float, group: str | None = None
+) -> tuple[int, float]:
     """Closest denomination to a measured diameter, and how far off it is.
 
     Shared by the diameter classifier and the pairing stage, so a coin cannot be
     labelled from one face's measurement while its size is reported from
     another.
+
+    Restricting to an alloy widens the nearest decision boundary from 0.5 mm to
+    at least 1.0 mm, which is what makes the same measurement reliable.
     """
+    candidates = DIAMETERS_MM
+    if group is not None:
+        allowed = denominations_in(group)
+        if allowed:
+            candidates = {d: DIAMETERS_MM[d] for d in allowed}
     return min(
-        ((d, abs(diameter_mm - mm)) for d, mm in DIAMETERS_MM.items()),
+        ((d, abs(diameter_mm - mm)) for d, mm in candidates.items()),
         key=lambda pair: pair[1],
     )
 
@@ -50,6 +77,7 @@ class ClassifyStage(Stage):
     def __init__(self, config: ClassifyConfig):
         self.config = config
         self._model = None
+        self._group_model = None
 
     def describe(self) -> str:
         return f"classify[{self.config.backend}]"
@@ -60,6 +88,8 @@ class ClassifyStage(Stage):
             return result
         if backend == "diameter":
             return self._classify_by_diameter(result)
+        if backend == "metal":
+            return self._classify_by_metal(result)
         if backend == "cnn":
             return self._classify_by_cnn(result)
         raise ValueError(f"unknown classify backend: {backend}")
@@ -82,6 +112,47 @@ class ClassifyStage(Stage):
                 0.0, 1.0 - gap / _DIAMETER_TOLERANCE_MM
             )
         return result
+
+    def _classify_by_metal(self, result: ScanResult) -> ScanResult:
+        missing = [c.index for c in result.coins if c.diameter_mm is None]
+        if missing:
+            raise ValueError(
+                "metal backend needs normalise.pixels_per_mm to be set "
+                f"(no diameter for coin(s) {missing[:5]})"
+            )
+
+        model = self._load_group_model()
+        for coin in result.coins:
+            group = confidence = None
+            if coin.normalised is not None:
+                group, confidence = model.predict(metal_features(coin.normalised))
+
+            best, gap = nearest_denomination(coin.diameter_mm, group)
+            coin.denomination = best
+            size_confidence = max(0.0, 1.0 - gap / _DIAMETER_TOLERANCE_MM)
+            # A coin is only as well identified as the weaker of the two steps:
+            # a confident alloy paired with a size that landed between two
+            # references is still a guess, and so is the reverse.
+            coin.denomination_confidence = (
+                size_confidence if confidence is None
+                else min(size_confidence, confidence * 2.0, 1.0)
+            )
+            if group is not None:
+                coin.metal_group = group
+        return result
+
+    def _load_group_model(self) -> GroupModel:
+        if self._group_model is None:
+            path = Path(self.config.metal_model)
+            if not path.exists():
+                raise FileNotFoundError(
+                    f"metal backend needs a fitted alloy model at {path}; "
+                    "build one with `euro-vision fit-metal`"
+                )
+            self._group_model = GroupModel.from_dict(
+                json.loads(path.read_text(encoding="utf-8"))
+            )
+        return self._group_model
 
     def _classify_by_cnn(self, result: ScanResult) -> ScanResult:
         import torch  # optional dependency, imported on use

@@ -51,6 +51,10 @@ class Coin:
     # Filled by the classification stage.
     denomination: Optional[int] = None  # cents
     denomination_confidence: float = 0.0
+    #: "copper", "gold" or "bimetal" when the metal backend ran. Kept because it
+    #: is what narrowed the denomination, so a wrong call is worth being able to
+    #: trace back to the alloy rather than the measurement.
+    metal_group: Optional[str] = None
 
     # Filled by the rare detection stage.
     is_flagged: bool = False

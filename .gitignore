@@ -18,6 +18,8 @@ data/**/*.heic
 data/**/*.dng
 data/raw/
 data/crops/
+data/crops_new/
+data/dataset/
 data/out/
 models/*.pt
 models/*.pth

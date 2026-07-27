@@ -73,6 +73,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ingest.set_defaults(func=cmd_ingest)
 
+    export = subparsers.add_parser(
+        "export-dataset",
+        help="write a YOLO training set from tray photos, pre-labelled",
+    )
+    export.add_argument("paths", nargs="+", help="tray images, or directories")
+    export.add_argument("-c", "--config", help="path to a YAML config file")
+    export.add_argument("-o", "--out", default="data/dataset", help="output directory")
+    export.add_argument(
+        "--by-denomination", action="store_true",
+        help="label eight denomination classes instead of a single 'coin' class",
+    )
+    export.add_argument("--val-split", type=float, default=0.2)
+    export.add_argument(
+        "--crops", action="store_true",
+        help="export per-coin crops in folder-per-class layout for a "
+             "denomination classifier, instead of whole-tray detection labels",
+    )
+    export.set_defaults(func=cmd_export_dataset)
+
     pair = subparsers.add_parser(
         "pair", help="match both faces of a batch into per-coin images"
     )
@@ -94,6 +113,22 @@ def build_parser() -> argparse.ArgumentParser:
         "-s", "--side", choices=["a", "b"], help="which tray (default: from filename)"
     )
     measure.set_defaults(func=cmd_measure)
+
+    fit_metal = subparsers.add_parser(
+        "fit-metal",
+        help="fit the alloy model used by the 'metal' classify backend",
+    )
+    fit_metal.add_argument(
+        "crops",
+        help="folder of labelled crops, one subfolder per denomination "
+        "(1c, 2c, 5c, 10c, 20c, 50c, 1_EUR, 2_EUR) as written by "
+        "`export-dataset --crops`",
+    )
+    fit_metal.add_argument("-c", "--config", help="path to a YAML config file")
+    fit_metal.add_argument(
+        "-o", "--output", help="where to write the model (default: from config)"
+    )
+    fit_metal.set_defaults(func=cmd_fit_metal)
 
     db = subparsers.add_parser("db", help="manage the rare coin database")
     db.add_argument("-c", "--config", help="path to a YAML config file")
@@ -280,6 +315,138 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         else:
             shutil.copy2(source, target)
         print(f"{source.name}  ->  {target}")
+    return 0
+
+
+def cmd_fit_metal(args: argparse.Namespace) -> int:
+    """Refit the alloy centroids from labelled crops.
+
+    Worth rerunning whenever the lighting or backdrop changes. The features are
+    channel ratios rather than absolute colours, which is what lets copper and
+    gold separate under warm light where raw hue could not, but a different
+    light source still moves them.
+    """
+    import json
+
+    from .metal import METAL_GROUP, GroupModel, metal_features
+    from .pipeline import load_image
+    from .types import DENOMINATIONS, format_denomination
+
+    config = load_config(args.config)
+    root = Path(args.crops)
+    if not root.is_dir():
+        print(f"error: {root} is not a directory", file=sys.stderr)
+        return 2
+
+    by_label = {
+        (format_denomination(d) or "").replace(" ", "_"): d for d in DENOMINATIONS
+    }
+    features, groups, counts = [], [], {}
+    # Accepts either a flat folder of class directories or the train/val layout
+    # that `export-dataset --crops` writes.
+    for folder in sorted(p for p in root.rglob("*") if p.is_dir()):
+        cents = by_label.get(folder.name)
+        if cents is None:
+            continue
+        group = METAL_GROUP[cents]
+        for image_path in sorted(folder.iterdir()):
+            if image_path.suffix.lower() not in IMAGE_SUFFIXES:
+                continue
+            features.append(metal_features(load_image(image_path)))
+            groups.append(group)
+            counts[group] = counts.get(group, 0) + 1
+
+    if len(set(groups)) < 2:
+        print(
+            f"error: found {len(groups)} labelled crops covering "
+            f"{sorted(set(groups))}; need at least two alloys",
+            file=sys.stderr,
+        )
+        return 1
+
+    model = GroupModel.fit(features, groups)
+    out = Path(args.output or config.classify.metal_model)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    payload = model.to_dict()
+    payload["note"] = f"Fitted from {root} on {len(groups)} crops: {counts}"
+    out.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+
+    print(f"fitted on {len(groups)} crops {counts}")
+    print(f"  -> {out}")
+    if min(counts.values()) < 10:
+        thin = [g for g, n in counts.items() if n < 10]
+        print(
+            f"  note: only {min(counts.values())} example(s) for {thin}; "
+            "that centroid will move a lot with a few more coins"
+        )
+    return 0
+
+
+def cmd_export_dataset(args: argparse.Namespace) -> int:
+    from .dataset import export_dataset
+
+    config = load_config(args.config)
+    paths: list[Path] = []
+    for raw in args.paths:
+        path = Path(raw)
+        if path.is_dir():
+            paths.extend(
+                p for p in sorted(path.iterdir())
+                if p.suffix.lower() in IMAGE_SUFFIXES
+            )
+        elif path.exists():
+            paths.append(path)
+        else:
+            print(f"error: {path} not found", file=sys.stderr)
+            return 1
+
+    if not paths:
+        print("error: no images found", file=sys.stderr)
+        return 1
+
+    if not config.calibrate.enabled:
+        print("note: calibration is off, so crops come from the photo as shot "
+              "and no\n      diameters are measured. Fine for a classifier that "
+              "reads the coin;\n      not fine for size-based classification.\n")
+
+    out = Path(args.out)
+    if args.crops:
+        from .dataset import export_crops
+
+        stats = export_crops(paths, out, config, val_split=args.val_split)
+        noun = "crops"
+    else:
+        stats = export_dataset(
+            paths, out, config,
+            by_denomination=args.by_denomination,
+            val_split=args.val_split,
+        )
+        noun = "labelled coins"
+
+    print(f"{stats.images} images, {stats.instances} {noun} -> {out}")
+    for name, count in sorted(stats.per_class.items(), key=lambda kv: -kv[1]):
+        print(f"  {name:>10}: {count}")
+    for problem in stats.skipped:
+        print(f"  skipped {problem}", file=sys.stderr)
+
+    if args.crops:
+        unsorted = stats.per_class.get("_unsorted", 0)
+        if unsorted:
+            print(f"\n  {unsorted} crops could not be labelled confidently and "
+                  f"went to _unsorted/.")
+            print("  Sorting those into class folders is the labelling work.")
+        print("\n  This is folder-per-class layout, so public coin datasets in "
+              "the same\n  shape can be merged by copying their class folders in.")
+    elif args.by_denomination:
+        thin = [n for n, c in stats.per_class.items() if c < 100]
+        if thin:
+            print(f"\n  Thin classes (<100 instances): {', '.join(sorted(thin))}")
+            print("  Detection tolerates small datasets; per-class appearance "
+                  "does not.")
+
+    print("\n  Labels come from this pipeline's own measurements. Correct them "
+          "before\n  training — a model fitted to uncorrected output can only "
+          "repeat its mistakes.")
     return 0
 
 

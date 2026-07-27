@@ -1,0 +1,30 @@
+{
+ "mean": [
+  1.1644129753112793,
+  0.02013336184124152
+ ],
+ "std": [
+  0.07670968133642761,
+  0.01995740302441099
+ ],
+ "centroids": {
+  "copper": [
+   2.6616216201563923,
+   -0.29842087471254236
+  ],
+  "gold": [
+   -0.12579251434021446,
+   -0.7685673916270085
+  ],
+  "bimetal": [
+   -0.5904413369374345,
+   1.263226856227349
+  ]
+ },
+ "n_train": 48,
+ "features": [
+  "redness",
+  "two_tone"
+ ],
+ "note": "Fitted on 48 hand-graded coins from batch 101 (5 copper, 24 gold, 19 bimetal) under that batch's lighting. Leave-one-out: 47/48 alloys, 46/48 denominations. Refit with `euro-vision fit-metal` if the lighting or backdrop changes."
+}

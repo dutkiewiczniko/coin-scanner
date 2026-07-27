@@ -135,11 +135,22 @@ class NormaliseConfig:
 
 @dataclass
 class ClassifyConfig:
-    #: "stub" (returns nothing), "diameter" (physical size heuristic), or "cnn".
+    #: "stub" (returns nothing), "diameter" (physical size heuristic), "metal"
+    #: (alloy from colour, then size within it), or "cnn".
     backend: str = "stub"
     weights: str = "models/denomination.pt"
+    #: Fitted alloy centroids used by the "metal" backend. Refit with
+    #: `euro-vision fit-metal` after any change to lighting or backdrop — the
+    #: features are ratios rather than absolute colours, but they are not
+    #: immune to a different light source.
+    metal_model: str = "models/metal_group.json"
     #: Below this the denomination is recorded but treated as unreliable.
     min_confidence: float = 0.5
+    #: How close a measured diameter must be to a reference size before the crop
+    #: is auto-labelled for classifier training. Denominations are 1 mm apart, so
+    #: anything looser guesses — and a guess written into a class folder is a
+    #: mislabelled training example that is very hard to find later.
+    crop_label_tolerance_mm: float = 0.35
 
 
 @dataclass
