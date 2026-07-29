@@ -23,6 +23,10 @@ ml = [
 dev = [
     "pytest>=7.4",
 ]
+scrape = [
+    "playwright>=1.49",
+    "requests>=2.31",
+]
 
 [project.scripts]
 euro-vision = "euro_vision.cli:main"

@@ -1,0 +1,46 @@
+# Batch 2 — 1 EUR. Targets to look up, NOT facts.
+#
+# Different shape from the 2 EUR batch. There are no 1 EUR commemoratives —
+# a member state may only issue those at 2 EUR — so every 1 EUR coin is a
+# standard national type struck year after year. Scarcity therefore comes from
+# one of two places, and neither is in Wikipedia:
+#
+#   micro-state  Monaco, Vatican, San Marino and Andorra mint tiny runs of the
+#                ordinary coin every year. This is where nearly all the value
+#                is at this denomination.
+#   first-year   A country's opening mintage, and any year where demand was
+#                already met and the mint struck only a token quantity.
+#
+# Varieties are worth a look too: the 2007 map change caught several mints out
+# and mules exist at 1 EUR as well as 2 EUR.
+#
+# Use semicolons in notes; commas break the columns.
+
+denomination,issuer,query,note
+# -- micro-states: the bulk of the value ---------------------------------
+100,monaco,1 euro,Monaco strikes a few tens of thousands a year
+100,vatican,1 euro,Vatican 1 EUR is scarce in every year
+100,saint-marin,1 euro,San Marino runs small
+100,andorre,1 euro,Andorra only began striking in 2014
+# -- varieties and map-change errors --------------------------------------
+100,,1 euro mule,mules at this denomination
+100,,1 euro variety,varieties the mule search misses
+100,,1 euro error,catch-all for described errors
+100,allemagne,1 euro map,2007 old/new map transition
+# -- first-year and short national runs -----------------------------------
+100,grece,1 euro,Greek first year and the Finland-struck coins
+100,chypre,1 euro,Cyprus from 2008
+100,malte,1 euro,Malta from 2008
+100,slovenie,1 euro,Slovenia from 2007
+100,estonie,1 euro,Estonia from 2011
+100,lettonie,1 euro,Latvia from 2014
+100,lituanie,1 euro,Lithuania from 2015
+100,croatie,1 euro,Croatia from 2023
+100,slovaquie,1 euro,Slovakia from 2009
+100,finlande,1 euro,Finland struck small runs in several years
+100,irlande,1 euro,Ireland short years
+100,pays-bas,1 euro,Netherlands short years
+100,luxembourg,1 euro,Luxembourg short years
+100,autriche,1 euro,Austria short years
+100,belgique,1 euro,Belgium short years
+100,portugal,1 euro,Portugal short years

@@ -88,5 +88,21 @@ pair:
   max_diameter_delta_mm: 1.2
   composite_face_px: 320
 
+numista:
+  # The catalogue of *varieties* — mules and caught die errors, which each get
+  # their own entry with their own mintage. Wikipedia has none of these; it
+  # lists intended issues. The key is read from this environment variable and
+  # never stored here, because this file is committed.
+  api_key_env: NUMISTA_API_KEY
+  lang: en
+  cache_dir: data/cache/numista
+  cache_days: 30
+  min_interval_s: 1.0
+  max_requests: 200
+  # The Hamburg mule was struck 600,000 times against 9,000,000 corrected coins,
+  # a ratio of 0.067. At 0.25 that is caught with room to spare, while ordinary
+  # year-to-year mintage variation is not.
+  outlier_ratio: 0.25
+
 output_dir: data/out
 save_crops: false

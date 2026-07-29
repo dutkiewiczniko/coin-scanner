@@ -1,0 +1,51 @@
+# Batch 3 — 1c to 50c. Targets to look up, NOT facts.
+#
+# The small denominations are where the *errors* are, rather than where the low
+# mintages are, and that flips the strategy. Two reasons:
+#
+#   Nobody checks them. A 1c coin is spent without a glance, so an error can
+#   survive in circulation for twenty years. The single most valuable euro coin
+#   in existence is a 1 cent piece — Italy's 2002 Mole Antonelliana, struck with
+#   the 2 cent reverse, of which only a handful escaped.
+#
+#   Low mintage alone means little here. Countries that stopped minting 1c and
+#   2c — Finland and the Netherlands — leave genuinely short years, but a scarce
+#   1c is worth cents unless something is wrong with it.
+#
+# So most rows below search for the fault, not the year, and leave denomination
+# blank to catch it at whichever value it occurred. The pipeline already flags
+# geometric striking faults on every denomination for the same reason: it costs
+# nothing extra to look.
+#
+# Use semicolons in notes; commas break the columns.
+
+denomination,issuer,query,note
+# -- specific known errors ------------------------------------------------
+1,italie,1 cent Mole Antonelliana,2002 struck with the 2c reverse; a handful exist
+1,italie,1 cent error,other Italian 1c faults
+2,italie,2 cent,the type the 1c error was struck from
+# -- errors and mules at any small denomination ---------------------------
+,,euro cent mule,mules at any cent denomination
+,,euro cent error coin,described errors at any cent denomination
+,,cent wrong reverse,the Portugal/Finland map-mule pattern
+,,cent variety,catch-all
+,,euro cent old map,2007 map transition caught several mints
+# -- countries that stopped minting 1c and 2c -----------------------------
+1,finlande,1 cent,Finland minted 1c only briefly
+2,finlande,2 cent,Finland minted 2c only briefly
+1,pays-bas,1 cent,Netherlands withdrew 1c and 2c
+2,pays-bas,2 cent,Netherlands withdrew 1c and 2c
+# -- micro-states ---------------------------------------------------------
+,monaco,euro cent,Monaco small denominations run tiny
+,vatican,euro cent,Vatican small denominations run tiny
+,saint-marin,euro cent,San Marino small denominations run tiny
+,andorre,euro cent,Andorra from 2014
+# -- first-year national issues -------------------------------------------
+,grece,euro cent 2002,Greek first year; some struck abroad
+,chypre,euro cent 2008,Cyprus first year
+,malte,euro cent 2008,Malta first year
+,slovenie,euro cent 2007,Slovenia first year
+,estonie,euro cent 2011,Estonia first year
+,croatie,euro cent 2023,Croatia first year
+50,,50 cent mule,50c is the largest of the brass coins; worth its own search
+20,,20 cent error,20c errors
