@@ -142,6 +142,114 @@ euro-vision db seed data/rare_coins_seed.csv
 euro-vision db list --denomination 200
 ```
 
+### Numista — the catalogue of varieties
+
+> Working notes, gotchas and the current database contents:
+> [`docs/numista-findings.md`](docs/numista-findings.md)
+
+
+Three different things get called a rare coin, and only two can be looked up:
+
+| | What it is | Where it comes from |
+|---|---|---|
+| **Mintage** | How many of an issue were struck | Wikipedia (`db import-commemoratives`), Numista |
+| **Variety** | A design fault that ran through a whole batch — a mule, a wrong die pairing | **Numista only** |
+| **Mint error** | Off-centre strike, clipped planchet, broadstrike | Nothing to look up — measured (`rare.backend: errors`) |
+
+A variety is an *issue*, so it gets its own catalogue entry. Germany's 2008
+Hamburg mule is N# 327881, KM# A261, mintage 600,000 — sitting beside the
+ordinary N# 2994 struck 9,000,000 times, because Stuttgart put the old Europe
+map on the reverse and the run was stopped. Wikipedia has none of this; it
+lists issues as intended, not as struck.
+
+A mint error belongs to one individual coin and no catalogue can list it. That
+half stays where it is, in `errors.py`.
+
+```bash
+# Free key (2,000 requests/month): log in, then open
+#   https://en.numista.com/api/api_key.php
+# That page is a <button> on /api/index.php with no href, so it is not
+# reachable by browsing or by search — go straight to the URL.
+$env:NUMISTA_API_KEY = "<key>"
+euro-vision numista check
+euro-vision numista search "2 euro Hamburg mule"
+euro-vision numista type 327881
+euro-vision numista scarce germany --max-types 60 [--save]
+```
+
+**Do not parse the descriptions.** The comment field is what a contributor
+happened to type, in whatever language and punctuation — N# 327881 writes
+`the 'Old' Europe Map`, which a substring search for "old map" misses by an
+apostrophe. The reliable signal is structural: the variety is a *separate type*
+with its own mintage, so it shows up as an anomalously low figure among the
+types sharing an issuer and year. `numista scarce` keys on that ratio and works
+regardless of wording. Keyword matching is used only to annotate a candidate
+the mintage rule already found.
+
+It returns a shortlist, not a verdict — a proof-only issue and a short
+commemorative run look the same from the mintage alone, and both are worth a
+glance anyway.
+
+#### Filling the database, in batches
+
+Cherry-picking, not mirroring. Each row of a target file is a *search*, never a
+fact — the mintage always comes back from Numista, so nothing enters the
+database on the strength of anyone's memory:
+
+```bash
+euro-vision numista fetch data/numista_targets_200.csv   --max-mintage 500000 --save
+euro-vision numista fetch data/numista_targets_100.csv   --max-mintage 300000 --save
+euro-vision numista fetch data/numista_targets_small.csv --varieties-only    --save
+```
+
+Three batches because the three denominations need different rules:
+
+| Batch | Rule | Why |
+|---|---|---|
+| 2 EUR | mintage ≤ 500,000 | where the low-mintage commemoratives are |
+| 1 EUR | mintage ≤ 300,000 | no commemoratives exist; scarcity is micro-state and first-year |
+| 1c–50c | `--varieties-only` | a 1c struck 5,000 times is still worth a cent. Only the fault has value |
+
+Two filters do nearly all the work, and both were learned from the data rather
+than guessed:
+
+- **Collector issues are excluded.** Not a field — it has to be read out of the
+  issue comment. Slovenia's 2007 2 EUR lists 21,250,000 for circulation and
+  100,000 as a "BU set", and only the first can ever reach a bank bag. Without
+  this the results are swamped: batch 1 dropped 347 collector-only issues to
+  keep 47. `--include-sets` turns it off. Plain `BU` is *kept*, because Monaco's
+  2007 Grace Kelly — 20,001 struck, the most sought-after euro coin there is —
+  is marked exactly that.
+- **A variety is kept at any mintage, including unknown.** The Hamburg mule ran
+  to 600,000, common by mintage and still the coin worth finding. Italy's 2002
+  1c "Error - missing R mintmark" has no figure at all.
+
+Evidence strength is tracked. `variant='error'` requires the *issue* comment to
+describe a fault. Finland's N# 95 says "Die error on the 2000 coin" at type
+level, which is a claim about one year — reading it as the type's property
+labelled nine ordinary years as errors.
+
+**Numista does not have everything.** The most valuable euro coin in existence,
+Italy's 2002 1c struck with the 2c Mole Antonelliana reverse, has no entry at
+all — with perhaps a hundred known it is a mint error on individual coins, not a
+variety with a production run. That is the boundary in the table above, and no
+catalogue crosses it.
+
+**Budget and terms.** The free tier is 2,000 requests a month and a sweep costs
+one request per type, so `scarce` is capped and prompts before spending.
+Responses are cached under `data/cache/numista` (gitignored) so a repeat costs
+nothing. Search by image — the endpoint that would identify a coin straight
+from a crop — is a paid plan (€100/month floor plus €0.03 a call) and returns
+403 on a free key; the client method exists for when that becomes worth it.
+
+Numista's terms of use forbid extracting a substantial part of their database,
+with no personal-use exemption, which is why `catalogue.py` sources mintages
+from Wikipedia instead. Using the sanctioned API is a different thing from
+mirroring the catalogue, and this stays on the right side of the line: bounded
+sweeps, caching to avoid re-fetching rather than to accumulate, and only the
+handful of coins that come back scarce written locally, each with its N# and
+source URL.
+
 ### Swappable backends
 
 Every stage runs a backend chosen in `config/default.yaml`, so the pipeline is
@@ -286,6 +394,7 @@ Coins are photographed in a custom 3D-printed tray designed to hold coins flat a
 - [ ] Tray segmentation model (Hough baseline in place; YOLO not trained)
 - [ ] Denomination classifier (diameter baseline in place; CNN not trained)
 - [ ] Rare coin database (initial set — seed file is unverified placeholders)
+- [x] Numista client — variety lookup and mintage-outlier sweep (needs an API key)
 - [ ] Rare coin detection model (approach undecided)
 - [x] Pairing — matching each coin's two faces into one record
 

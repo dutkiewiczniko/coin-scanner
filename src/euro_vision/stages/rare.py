@@ -8,10 +8,18 @@ once the earlier stages are producing clean crops:
   shortlist — flags every coin in the watchlist denominations for manual review.
               No model. Useful immediately: it turns a full tray into the ~handful
               of 1 and 2 euro coins actually worth eyeballing.
+  errors    — geometric striking faults: clipped planchets, off-centre strikes,
+              broadstrikes. Nothing to look up, because an error belongs to one
+              particular coin rather than to an issue.
   embedding — nearest-neighbour against reference images of known rare issues.
               Scales to new rare coins without retraining. NOT IMPLEMENTED.
   metadata  — read country/year from the design, look up rarity in the database.
               NOT IMPLEMENTED.
+
+Rarity has two unrelated halves and they need different machinery. Which *issue*
+a coin is decides catalogue rarity, and that is a database question — see
+`euro_vision.catalogue`. Whether this particular coin was struck badly is a
+measurement question, and no catalogue can answer it — see `euro_vision.errors`.
 """
 
 from __future__ import annotations
@@ -77,6 +85,40 @@ def _shortlist(result: ScanResult, config: RareConfig) -> ScanResult:
             coin.is_flagged = True
             coin.rare_score = 0.0
             coin.rare_notes = "watchlist denomination — manual review"
+    return result
+
+
+@register("errors")
+def _errors(result: ScanResult, config: RareConfig) -> ScanResult:
+    """Flag coins whose geometry says they were struck badly.
+
+    Every denomination is checked, not just the watchlist ones: a striking error
+    is worth finding on a 2c as much as on a 2 EUR, and unlike catalogue rarity
+    it costs nothing extra to look.
+
+    Coins whose outline could not be measured are left unflagged and told apart
+    in the notes. On a densely filled tray about half of them fall in that group,
+    because a ray that meets a touching neighbour runs on into it and the coin's
+    true edge is never seen — saying so is more use than a score that quietly
+    means nothing.
+    """
+    from ..errors import measure
+    from .classify import DIAMETERS_MM
+
+    for coin in result.coins:
+        report = measure(
+            crop=coin.normalised,
+            diameter_mm=coin.diameter_mm,
+            expected_mm=DIAMETERS_MM.get(coin.denomination),
+            radial_profile=coin.detection.radial_profile,
+        )
+        coin.rare_score = report.worst
+        found = report.flagged(config.error_threshold)
+        if found:
+            coin.is_flagged = True
+            coin.rare_notes = "; ".join(found)
+        elif not report.valid:
+            coin.rare_notes = report.notes or "not measurable"
     return result
 
 

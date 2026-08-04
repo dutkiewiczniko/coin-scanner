@@ -145,7 +145,105 @@ def build_parser() -> argparse.ArgumentParser:
     db_list.add_argument(
         "-d", "--denomination", type=int, help="filter by value in cents, e.g. 200"
     )
+    db_list.add_argument(
+        "-m", "--max-mintage", type=int,
+        help="only show issues struck this many times or fewer",
+    )
+    db_list.add_argument("-n", "--limit", type=int, default=40)
     db_list.set_defaults(func=cmd_db_list)
+
+    db_import = db_sub.add_parser(
+        "import-commemoratives",
+        help="load every 2 EUR commemorative issue and its mintage from Wikipedia",
+    )
+    db_import.add_argument(
+        "--offline", metavar="JSON",
+        help="parse a previously saved wikitext response instead of fetching",
+    )
+    db_import.set_defaults(func=cmd_db_import_commemoratives)
+
+    numista = subparsers.add_parser(
+        "numista", help="query the Numista catalogue for varieties and mintages"
+    )
+    numista.add_argument("-c", "--config", help="path to a YAML config file")
+    n_sub = numista.add_subparsers(dest="numista_command", required=True)
+
+    n_check = n_sub.add_parser("check", help="verify the API key works (1 request)")
+    n_check.set_defaults(func=cmd_numista_check)
+
+    n_search = n_sub.add_parser("search", help="search the catalogue by text")
+    n_search.add_argument("query", help='e.g. "2 euro Hamburg mule"')
+    n_search.add_argument("-n", "--limit", type=int, default=20)
+    n_search.set_defaults(func=cmd_numista_search)
+
+    n_type = n_sub.add_parser("type", help="show one type, its issues and mintages")
+    n_type.add_argument("type_id", help="Numista N#, e.g. 327881")
+    n_type.set_defaults(func=cmd_numista_type)
+
+    n_scarce = n_sub.add_parser(
+        "scarce",
+        help="sweep an issuer for types struck far less than their same-year "
+             "siblings — the signature of a mule or caught die error",
+    )
+    n_scarce.add_argument(
+        "issuer",
+        help="Numista issuer code, e.g. allemagne, or a country name like germany",
+    )
+    n_scarce.add_argument(
+        "-q", "--query", default="euro",
+        help="restrict the sweep to types matching this text (default: euro)",
+    )
+    n_scarce.add_argument(
+        "--max-types", type=int, default=60,
+        help="stop after this many types. Each one costs a request for its "
+             "issues, and the free tier is 2,000 a month.",
+    )
+    n_scarce.add_argument(
+        "--ratio", type=float,
+        help="override numista.outlier_ratio",
+    )
+    n_scarce.add_argument(
+        "--save", action="store_true",
+        help="write the candidates found to the rare coin database",
+    )
+    n_scarce.add_argument(
+        "--yes", action="store_true", help="skip the request-budget prompt"
+    )
+    n_scarce.set_defaults(func=cmd_numista_scarce)
+
+    n_fetch = n_sub.add_parser(
+        "fetch",
+        help="resolve a list of target coins against Numista and keep the "
+             "scarce ones — the cherry-picking alternative to a full sweep",
+    )
+    n_fetch.add_argument("targets", help="CSV of targets, e.g. data/numista_targets_200.csv")
+    n_fetch.add_argument(
+        "-m", "--max-mintage", type=int,
+        help="keep issues struck this many times or fewer "
+             "(default: rare.scarce_mintage from config)",
+    )
+    n_fetch.add_argument(
+        "--per-query", type=int, default=4,
+        help="how many search hits to examine per target row",
+    )
+    n_fetch.add_argument(
+        "--varieties-only", action="store_true",
+        help="keep only issues whose own comment describes an error or variety, "
+             "ignoring mintage. The right mode below 1 EUR, where value comes "
+             "from the fault rather than from scarcity.",
+    )
+    n_fetch.add_argument(
+        "--include-sets", action="store_true",
+        help="keep proof and collector-set issues too. Off by default: they "
+             "never reach a bank bag, and they outnumber the real finds.",
+    )
+    n_fetch.add_argument(
+        "--save", action="store_true", help="write the keepers to the database"
+    )
+    n_fetch.add_argument(
+        "--yes", action="store_true", help="skip the request-budget prompt"
+    )
+    n_fetch.set_defaults(func=cmd_numista_fetch)
 
     return parser
 
@@ -633,14 +731,595 @@ def cmd_db_list(args: argparse.Namespace) -> int:
     with RareCoinStore(config.rare.database) as store:
         rows = store.rare_coins(args.denomination)
         if not rows:
-            print("no rare coins in the database — run `euro-vision db seed`")
+            print("no rare coins in the database — run "
+                  "`euro-vision db import-commemoratives`")
             return 0
-        for row in rows:
+        limit = getattr(args, "max_mintage", None)
+        if limit is not None:
+            rows = [r for r in rows if r["mintage"] is not None
+                    and r["mintage"] <= limit]
+        # Scarcest first: the point of the list is to know what to look for.
+        rows = sorted(rows, key=lambda r: (r["mintage"] is None, r["mintage"] or 0))
+        shown = rows[: args.limit]
+        for row in shown:
             value = format_denomination(row["denomination"])
             year = row["year"] or "----"
             mintage = f"{row['mintage']:,}" if row["mintage"] else "unknown mintage"
-            print(f"{value:>7}  {row['country']:<12} {year}  {row['name']}  ({mintage})")
+            print(f"{mintage:>12}  {value:>6}  {row['country']:<22} "
+                  f"{year}  {row['name'][:52]}")
+        if len(rows) > len(shown):
+            print(f"... and {len(rows) - len(shown)} more")
         print(f"\n{len(rows)} coin(s)")
+    return 0
+
+
+def cmd_db_import_commemoratives(args: argparse.Namespace) -> int:
+    """Load every 2 EUR commemorative issue, common and scarce alike.
+
+    Everything is stored rather than only the scarce ones so that rarity stays a
+    query against mintage instead of a list someone has to keep up to date. An
+    issue that is common today is still the row you need in order to say so.
+    """
+    import json as _json
+
+    from .catalogue import (
+        COMMEMORATIVE_DENOMINATION,
+        SOURCE_URL,
+        parse_issues,
+        load_commemoratives,
+    )
+
+    config = load_config(args.config)
+    try:
+        if args.offline:
+            wikitext = _json.loads(
+                Path(args.offline).read_text(encoding="utf-8")
+            )["parse"]["wikitext"]
+            issues = parse_issues(wikitext)
+        else:
+            issues = load_commemoratives()
+    except Exception as exc:  # noqa: BLE001 - network and parsing both surface here
+        print(f"error: could not load the catalogue: {exc}", file=sys.stderr)
+        return 1
+
+    if not issues:
+        print("error: parsed no issues — the page layout may have changed",
+              file=sys.stderr)
+        return 1
+
+    threshold = config.rare.scarce_mintage
+    added = 0
+    with RareCoinStore(config.rare.database) as store:
+        store.init_schema()
+        for issue in issues:
+            store.add_rare_coin(
+                country=issue.country,
+                denomination=COMMEMORATIVE_DENOMINATION,
+                year=issue.year,
+                variant="commemorative",
+                name=issue.feature or issue.name,
+                mintage=issue.mintage,
+                notes=issue.description[:500],
+                source_url=SOURCE_URL,
+            )
+            added += 1
+        total = store.count()
+
+    missing = sum(1 for i in issues if i.mintage is None)
+    scarce = sum(1 for i in issues
+                 if i.mintage is not None and i.mintage <= threshold)
+    print(f"loaded {added} commemorative issues "
+          f"({min(i.year for i in issues)}-{max(i.year for i in issues)}), "
+          f"{total} rows in the database")
+    if missing:
+        print(f"  {missing} without a mintage figure — left NULL rather than guessed")
+    print(f"  {scarce} at or below the {threshold:,} scarcity threshold")
+    print("  mintages are Official Journal planned volumes; actual production "
+          "can deviate")
+    return 0
+
+
+# -- numista --------------------------------------------------------------
+
+
+def _numista(args: argparse.Namespace):
+    """Build a client from config, with the key read from the environment."""
+    import os
+
+    from .numista import Numista
+
+    config = load_config(args.config).numista
+    return Numista(
+        api_key=os.environ.get(config.api_key_env),
+        lang=config.lang,
+        cache_dir=config.cache_dir,
+        cache_days=config.cache_days,
+        min_interval_s=config.min_interval_s,
+    ), config
+
+
+def cmd_numista_check(args: argparse.Namespace) -> int:
+    from .numista import API_KEY_ENV, KEY_URL, NumistaError
+
+    client, config = _numista(args)
+    if not client.api_key:
+        print(f"no API key: ${config.api_key_env} is not set.\n")
+        print("  1. Log in to Numista, then open")
+        print(f"       {KEY_URL}")
+        print("     Free, 2,000 requests/month. That page is a button on "
+              "/api/index.php with")
+        print("     no href, so it cannot be found by browsing — go straight "
+              "to the URL.")
+        print(f"  2. $env:{config.api_key_env} = '<key>'   "
+              f"(PowerShell; export {API_KEY_ENV}=<key> elsewhere)")
+        print("\nThe key is read from the environment and never written to the "
+              "config file,\nwhich is committed.")
+        return 1
+
+    try:
+        payload = client.check()
+    except NumistaError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"connected to Numista as key ...{client.api_key[-4:]} "
+          f"({payload.get('count', 0):,} coin types match 'euro')")
+    print(f"  cache: {config.cache_dir} ({config.cache_days} day TTL)")
+    print(f"  spent: {client.requests_made} request(s) this run")
+    return 0
+
+
+def cmd_numista_search(args: argparse.Namespace) -> int:
+    from .numista import NumistaError
+
+    client, _ = _numista(args)
+    try:
+        total, types = client.search_types(args.query, count=min(args.limit, 50))
+    except NumistaError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"{total:,} match(es) for {args.query!r}, showing {len(types)}\n")
+    for t in types:
+        years = (f"{t.min_year}-{t.max_year}" if t.min_year != t.max_year
+                 else str(t.min_year or ""))
+        refs = f"  [{'; '.join(t.references)}]" if t.references else ""
+        print(f"  {t.n_number:<10} {years:<10} {t.title[:60]}{refs}")
+        print(f"  {'':<10} {t.issuer}  {t.url}")
+    return 0
+
+
+def cmd_numista_type(args: argparse.Namespace) -> int:
+    """Show a type and its per-year mintages.
+
+    Two requests: the type record, then its issues. The comment is printed in
+    full because on a variety entry that is where the mint's mistake is
+    described — but see `numista.py` on why nothing parses it.
+    """
+    from .numista import NumistaError, plain_text, variety_hint
+
+    client, _ = _numista(args)
+    try:
+        record = client.get_type(args.type_id)
+        issues = client.get_issues(args.type_id)
+    except NumistaError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    issuer = (record.get("issuer") or {}).get("name", "")
+    print(f"N# {record.get('id')}  {record.get('title', '')}")
+    print(f"  issuer:      {issuer}")
+    print(f"  years:       {record.get('min_year')} - {record.get('max_year')}")
+    composition = (record.get("composition") or {}).get("text")
+    if composition:
+        print(f"  composition: {composition}")
+    for key in ("weight", "size", "thickness"):
+        if record.get(key) is not None:
+            print(f"  {key + ':':<13}{record[key]}")
+    refs = "; ".join(
+        f"{(r.get('catalogue') or {}).get('code', '')}# {r.get('number', '')}"
+        for r in record.get("references", []) or []
+    )
+    if refs:
+        print(f"  references:  {refs}")
+    print(f"  url:         {record.get('url')}")
+
+    # The field is `comments`, plural, and it is HTML — bold tags, &quot;
+    # entities, and sometimes an <img> of the variety.
+    comment = plain_text(record.get("comments") or "")
+    if comment:
+        hint = variety_hint(comment)
+        print(f"\ncomments{f'  (variety words: {hint})' if hint else ''}:")
+        print("  " + comment.replace("\n", "\n  "))
+
+    if issues:
+        print(f"\nissues ({len(issues)}):")
+        for issue in issues:
+            mintage = f"{issue.mintage:,}" if issue.mintage is not None else "unknown"
+            mark = f" ({issue.mint_letter})" if issue.mint_letter else ""
+            note = f"  {issue.comment}" if issue.comment else ""
+            print(f"  NN# {issue.id:<8} {issue.year or '----'}{mark:<5} "
+                  f"{mintage:>13}{note}")
+
+    print(f"\n  {client.requests_made} request(s) spent")
+    return 0
+
+
+def cmd_numista_scarce(args: argparse.Namespace) -> int:
+    """Find types struck far less than their same-year siblings.
+
+    This is the mechanical version of "look for the coin whose description
+    mentions an error". A mule or a caught die fault becomes its own catalogue
+    type with its own, small, mintage, sitting beside the corrected type struck
+    in the millions. That ratio is language-independent and does not depend on
+    anyone having written the word "mule" anywhere.
+
+    Costs one request per page of types plus one per type for its issues, which
+    is why it asks before it starts.
+    """
+    from .numista import (
+        EURO_ISSUERS,
+        NumistaError,
+        mintage_outliers,
+        plain_text,
+        variety_hint,
+    )
+
+    client, config = _numista(args)
+    issuer = EURO_ISSUERS.get(args.issuer.lower().replace(" ", "_"), args.issuer)
+
+    budget = args.max_types + (args.max_types // 50) + 1
+    if not args.yes:
+        print(f"sweeping issuer {issuer!r} for up to {args.max_types} types.")
+        print(f"  up to {budget} API requests, against a free tier of 2,000 a "
+              f"month.")
+        print(f"  cached responses in {config.cache_dir} are reused and cost "
+              f"nothing.")
+        if input("proceed? [y/N] ").strip().lower() not in ("y", "yes"):
+            print("aborted")
+            return 0
+
+    try:
+        types = list(client.all_types(
+            q=args.query or None,
+            issuer=issuer,
+            max_requests=max(1, args.max_types // 50 + 1),
+        ))[: args.max_types]
+        if not types:
+            print(f"no types found for issuer {issuer!r} matching "
+                  f"{args.query!r}. Check the code against "
+                  f"`euro-vision numista search`.", file=sys.stderr)
+            return 1
+        typed_issues = [(t, client.get_issues(t.id)) for t in types]
+    except NumistaError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print("\ninterrupted — partial results are cached and cost nothing to "
+              "resume", file=sys.stderr)
+        return 1
+
+    candidates = mintage_outliers(
+        typed_issues, ratio=args.ratio or config.outlier_ratio
+    )
+    with_mintage = sum(
+        1 for _, issues in typed_issues
+        for i in issues if i.mintage is not None
+    )
+    print(f"\n{len(types)} types, {with_mintage} issues carrying a mintage, "
+          f"{client.requests_made} request(s) spent")
+
+    if not candidates:
+        print("\nno mintage outliers. Either this issuer has no catalogued "
+              "varieties, or\nthe sweep did not reach them — raise --max-types "
+              "or loosen --ratio.")
+        return 0
+
+    print(f"\n{len(candidates)} candidate(s), most anomalous first:\n")
+    for c in candidates:
+        print(f"  {c.type.n_number:<10} {c.year}  {c.type.title[:56]}")
+        print(f"  {'':<10} {c.mintage:,} struck, {c.ratio:.1%} of the "
+              f"{c.sibling_mintage:,} sibling")
+        if c.type.references:
+            print(f"  {'':<10} {'; '.join(c.type.references)}")
+        print(f"  {'':<10} {c.type.url}")
+
+    print("\n  A low sibling mintage also means a proof-only issue or a short "
+          "commemorative\n  run, so this is a shortlist to look at, not a "
+          "verdict. Open the N# and read\n  the comment to see which it is.")
+
+    if args.save:
+        # The variety text can sit on either the type or the issue, and on
+        # N# 327881 — the Hamburg mule — the type comment is empty while the
+        # issue carries "Error: old map style on reverse (Mule)". Reading only
+        # the type would have filed it as an ordinary standard issue.
+        issue_notes = {
+            t.id: " ".join(i.comment for i in issues if i.comment)
+            for t, issues in typed_issues
+        }
+        full_config = load_config(args.config)
+        with RareCoinStore(full_config.rare.database) as store:
+            store.init_schema()
+            before = store.count()
+            for c in candidates:
+                record = client.get_type(c.type.id)
+                comment = " ".join(
+                    part for part in (plain_text(record.get("comments") or ""),
+                                      issue_notes.get(c.type.id, ""))
+                    if part
+                ).strip()
+                hint = variety_hint(comment)
+                store.add_rare_coin(
+                    country=c.type.issuer,
+                    denomination=_denomination_from_title(c.type.title),
+                    year=c.year,
+                    variant="error" if hint else "standard",
+                    name=f"{c.type.title} ({c.type.n_number})"[:120],
+                    mintage=c.mintage,
+                    notes=(f"{c.reason}. {comment}").strip()[:500],
+                    source_url=c.type.url,
+                )
+            print(f"\n  saved {store.count() - before} new row(s) to "
+                  f"{full_config.rare.database} "
+                  f"({client.requests_made} requests total)")
+    return 0
+
+
+def cmd_numista_fetch(args: argparse.Namespace) -> int:
+    """Resolve a curated target list and keep only the scarce results.
+
+    Cherry-picking rather than mirroring. Each CSV row is a *search*, not a
+    fact — the mintage always comes back from Numista, so nothing enters the
+    database on the strength of someone's memory, and a target that turns out
+    to be common is dropped instead of being recorded as rare.
+
+    Costs one request per row, plus one per type examined, plus one per type
+    kept. A 21-row list at --per-query 4 is roughly 150 requests against the
+    free tier's 2,000 a month.
+    """
+    from .numista import (
+        CIRCULATING_QUALITIES,
+        EURO_ISSUERS,
+        NumistaError,
+        denomination_cents,
+        issue_quality,
+        plain_text,
+        variant_of,
+        variety_hint,
+    )
+
+    full_config = load_config(args.config)
+    client, _ = _numista(args)
+    threshold = args.max_mintage or full_config.rare.scarce_mintage
+
+    targets = _read_targets(Path(args.targets))
+    if not targets:
+        print(f"error: no target rows in {args.targets}", file=sys.stderr)
+        return 1
+
+    estimate = len(targets) * (1 + args.per_query)
+    if not args.yes:
+        print(f"{len(targets)} target(s) from {args.targets}")
+        print(f"  keeping issues struck {threshold:,} times or fewer")
+        print(f"  up to ~{estimate} API requests (free tier: 2,000/month); "
+              f"cached rows cost nothing")
+        if input("proceed? [y/N] ").strip().lower() not in ("y", "yes"):
+            print("aborted")
+            return 0
+
+    keepers: dict[tuple[int, int], dict] = {}
+    seen_types: set[int] = set()
+    misses: list[str] = []
+    skipped_quality: dict[str, int] = {}
+
+    try:
+        for row in targets:
+            issuer = EURO_ISSUERS.get(
+                (row["issuer"] or "").lower().replace(" ", "_"), row["issuer"] or None
+            )
+            # One bad row must not discard the whole run. An invalid issuer code
+            # is a hard HTTP 400, and letting that propagate threw away every
+            # result already paid for — the requests are spent either way, so
+            # the only thing aborting achieves is wasting them.
+            try:
+                _, hits = client.search_types(
+                    row["query"], issuer=issuer, count=args.per_query
+                )
+            except NumistaError as exc:
+                misses.append(f"{row['query']!r} ({issuer or 'any issuer'}): {exc}")
+                continue
+            if not hits:
+                misses.append(f"{row['query']!r} ({issuer or 'any issuer'}): no match")
+                continue
+
+            for summary in hits[: args.per_query]:
+                if summary.id in seen_types:
+                    continue
+                seen_types.add(summary.id)
+                try:
+                    issues = client.get_issues(summary.id)
+                except NumistaError as exc:
+                    misses.append(f"{summary.n_number} issues: {exc}")
+                    continue
+                for issue in issues:
+                    is_variety = bool(variety_hint(issue.comment))
+                    # A variety is kept whatever its mintage, including when
+                    # that is unknown. Italy's 2002 1c "Error - missing R
+                    # mintmark" has no figure at all — nobody counted them —
+                    # and skipping unmintaged issues threw away exactly the
+                    # coins this is looking for. The Hamburg mule makes the
+                    # same point from the other end: 600,000 is common by
+                    # mintage and still worth finding.
+                    if not is_variety:
+                        # Below 1 EUR scarcity is worth nothing on its own — a
+                        # 1c struck 5,000 times is still worth a cent — so
+                        # --varieties-only drops the mintage test entirely
+                        # rather than merely tightening it.
+                        if args.varieties_only:
+                            continue
+                        if issue.mintage is None or issue.mintage > threshold:
+                            continue
+                    quality = issue_quality(issue.comment)
+                    if not args.include_sets and quality not in CIRCULATING_QUALITIES:
+                        skipped_quality[quality] = skipped_quality.get(quality, 0) + 1
+                        continue
+                    record = client.get_type(summary.id)
+                    cents = denomination_cents(record)
+                    if cents is None:
+                        # Not a euro coin — the search wandered. Better dropped
+                        # than stored with a guessed denomination.
+                        continue
+                    if row["denomination"] and cents != row["denomination"]:
+                        continue
+                    comments = plain_text(record.get("comments") or "")
+                    # Two different strengths of evidence, and collapsing them
+                    # into one flag is wrong. Finland's N# 95 carries "Die error
+                    # on the 2000 coin" in its *type* comments, which said
+                    # nothing about 1999 or 2003 — yet stamped all eight years
+                    # as varieties. The issue comment is per-coin and is the
+                    # only one that justifies the claim.
+                    keepers[(summary.id, issue.id)] = {
+                        "summary": summary,
+                        "issue": issue,
+                        "cents": cents,
+                        "quality": quality,
+                        "variant": variant_of(record.get("type"), is_variety),
+                        "comments": comments,
+                        "hint": variety_hint(issue.comment),
+                        "type_hint": variety_hint(comments),
+                        "note": row["note"],
+                    }
+    except NumistaError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print("\ninterrupted — what was fetched is cached and costs nothing to "
+              "resume", file=sys.stderr)
+        return 1
+
+    varieties = sum(1 for e in keepers.values() if e["hint"])
+    if args.varieties_only:
+        print(f"\n{len(seen_types)} types examined, {len(keepers)} variety "
+              f"issue(s) kept (mintage ignored), "
+              f"{client.requests_made} request(s) spent")
+    else:
+        # Only those over the threshold were kept *because* they are varieties;
+        # counting all flagged keepers overstates what the rule contributed.
+        by_variety = sum(
+            1 for e in keepers.values()
+            if e["hint"] and (e["issue"].mintage or 0) > threshold
+        )
+        print(f"\n{len(seen_types)} types examined, {len(keepers)} issue(s) kept "
+              f"at or under {threshold:,} ({varieties} of them varieties; "
+              f"{by_variety} kept on the variety rule alone), "
+              f"{client.requests_made} request(s) spent")
+    if skipped_quality:
+        detail = ", ".join(f"{n} {q}" for q, n in sorted(skipped_quality.items()))
+        print(f"  dropped {sum(skipped_quality.values())} collector-only "
+              f"issue(s): {detail}  (--include-sets keeps them)")
+    if misses:
+        print(f"\n  {len(misses)} target(s) matched nothing:")
+        for miss in misses:
+            print(f"    {miss}")
+
+    if not keepers:
+        print("\nnothing kept. Raise --max-mintage, or the issuer codes may be "
+              "wrong.")
+        return 0
+
+    print()
+    print(f"  {'mintage':>10}  {'value':>6}  {'year':<10} {'quality':<12} "
+          f"{'country':<24} title")
+    # Unknown mintage sorts last, not as zero — it is absent, not tiny.
+    for entry in sorted(
+        keepers.values(),
+        key=lambda e: (e["issue"].mintage is None, e["issue"].mintage or 0),
+    ):
+        issue, summary = entry["issue"], entry["summary"]
+        mark = f" ({issue.mint_letter})" if issue.mint_letter else ""
+        flag = ("  <- VARIETY" if entry["hint"]
+                else "  (type notes errors in some years)" if entry["type_hint"]
+                else "")
+        mintage = f"{issue.mintage:,}" if issue.mintage is not None else "unknown"
+        print(f"  {mintage:>10}  "
+              f"{format_denomination(entry['cents']):>6}  "
+              f"{str(issue.year or '----') + mark:<10} "
+              f"{entry['quality']:<12} {summary.issuer[:24]:<24} "
+              f"{summary.title[:44]}{flag}")
+        print(f"  {'':>10}  {summary.n_number}  {summary.url}")
+
+    if args.save:
+        with RareCoinStore(full_config.rare.database) as store:
+            store.init_schema()
+            before = store.count()
+            for entry in keepers.values():
+                issue, summary = entry["issue"], entry["summary"]
+                mark = f" {issue.mint_letter}" if issue.mint_letter else ""
+                caveat = ("type notes errors in some years — not confirmed for "
+                          "this one" if entry["type_hint"] and not entry["hint"]
+                          else "")
+                notes = " | ".join(part for part in (
+                    f"{entry['quality']} issue", entry["note"], caveat,
+                    issue.comment, entry["comments"][:300]
+                ) if part)
+                store.add_rare_coin(
+                    country=summary.issuer,
+                    denomination=entry["cents"],
+                    year=issue.year,
+                    variant=entry["variant"],
+                    name=f"{summary.title}{mark} ({summary.n_number})"[:120],
+                    mintage=issue.mintage,
+                    notes=notes[:500],
+                    source_url=summary.url,
+                )
+            print(f"\n  saved {store.count() - before} new row(s) to "
+                  f"{full_config.rare.database} ({store.count()} total)")
+    else:
+        print("\n  Nothing written. Re-run with --save to store these.")
+    return 0
+
+
+def _read_targets(path: Path) -> list[dict]:
+    """Read a target CSV, skipping `#` comments and blank lines."""
+    if not path.exists():
+        raise FileNotFoundError(f"target list not found: {path}")
+    lines = [
+        line for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    rows = []
+    for raw in csv.DictReader(lines):
+        query = (raw.get("query") or "").strip()
+        if not query:
+            continue
+        denomination = (raw.get("denomination") or "").strip()
+        rows.append({
+            "denomination": int(denomination) if denomination else None,
+            "issuer": (raw.get("issuer") or "").strip(),
+            "query": query,
+            "note": (raw.get("note") or "").strip(),
+        })
+    return rows
+
+
+def _denomination_from_title(title: str) -> int:
+    """Face value in cents, read from a Numista title like '2 Euros (...)'.
+
+    Zero when it cannot be read, rather than a guess — the column is NOT NULL
+    and a wrong denomination silently excludes the coin from the rare stage's
+    watchlist, which is worse than an obviously bogus 0.
+    """
+    import re
+
+    lowered = title.lower()
+    # Cents first: Numista writes "50 Euro Cents", so a euro-first pattern reads
+    # the 50 as fifty euros.
+    cents = re.match(r"\s*(\d+)\s*(?:euro\s*)?cents?\b", lowered)
+    if cents:
+        return int(cents.group(1))
+    euros = re.match(r"\s*(\d+)\s*euros?\b", lowered)
+    if euros:
+        return int(euros.group(1)) * 100
     return 0
 
 

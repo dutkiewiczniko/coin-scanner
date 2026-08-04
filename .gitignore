@@ -25,3 +25,12 @@ models/*.pt
 models/*.pth
 *.sqlite
 *.sqlite3
+
+# API credentials. The eBay Cert ID and the Numista key live here rather than in
+# config/default.yaml, which is committed.
+.env
+
+# Cached Numista API responses. Kept out of git deliberately: the terms of use
+# forbid redistributing a substantial part of their database, and a committed
+# cache is exactly that.
+data/cache/

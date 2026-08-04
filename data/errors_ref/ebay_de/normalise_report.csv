@@ -1,0 +1,506 @@
+file,status,method,n
+clipped_planchet__v1_325949150930_0.png,ok,hough,1
+cud__v1_198425558031_0.png,ok,hough,1
+cud__v1_206346011252_0.png,ok,hough,1
+cud__v1_206360312944_0.png,ok,hough,1
+cud__v1_206389351266_0.png,ok,hough,1
+cud__v1_327214541077_0.png,ok,hough,1
+cud__v1_327218230742_0.png,ok,hough,1
+cud__v1_327223171903_0.png,ok,hough,1
+cud__v1_327226462997_0.png,ok,hough,1
+cud__v1_327231701752_0.png,ok,hough,1
+cud__v1_327243150676_0.png,ok,hough,1
+cud__v1_327244209776_0.png,ok,hough,1
+error_de__v1_127694059907_0_a.png,ok,hough,2
+error_de__v1_127694059907_0_b.png,ok,hough,2
+error_de__v1_127882248162_0.jpg,"rejected (rim 0.65, fill 0.99)",hough,0
+error_de__v1_127986359719_0.png,ok,hough,1
+error_de__v1_137193842367_0.jpg,"rejected (rim 0.65, fill 0.71)",hough,0
+error_de__v1_137512580114_0.jpg,"rejected (rim 0.50, fill 0.54)",hough,0
+error_de__v1_147170178031_0.jpg,"rejected (rim 0.79, fill 0.45)",hough,0
+error_de__v1_147263840786_0.jpg,"rejected (rim 0.80, fill 0.80)",hough,0
+error_de__v1_147338617602_0.png,ok,threshold,1
+error_de__v1_147431940938_0.jpg,"rejected (rim 0.53, fill 0.52)",hough,0
+error_de__v1_157729960585_0.png,ok,hough,1
+error_de__v1_168519486248_0.jpg,"rejected (rim 0.71, fill 0.61)",hough,0
+error_de__v1_168558427223_0.jpg,"rejected (rim 0.81, fill 0.84)",hough,0
+error_de__v1_168564880149_0.png,ok,hough,1
+error_de__v1_168570306392_0.jpg,"rejected (rim 0.53, fill 0.39)",hough,0
+error_de__v1_174958926737_0.png,ok,hough,1
+error_de__v1_176387944828_0.jpg,"rejected (rim 0.68, fill 0.79)",hough,0
+error_de__v1_178160951290_0.png,ok,threshold,1
+error_de__v1_178164364545_0.png,ok,hough,1
+error_de__v1_178344570009_0.png,ok,threshold,1
+error_de__v1_178346014825_0.png,ok,hough,1
+error_de__v1_185536727653_0.jpg,"rejected (rim 0.50, fill 1.00)",hough,0
+error_de__v1_188138802525_0.jpg,"rejected (rim 0.83, fill 0.61)",hough,0
+error_de__v1_188707940595_0.png,ok,threshold,1
+error_de__v1_197324519077_0.png,ok,hough,1
+error_de__v1_198361727474_0_a.png,ok,hough,2
+error_de__v1_198361727474_0_b.png,ok,hough,2
+error_de__v1_198392460058_0.jpg,"rejected (rim 0.86, fill 0.79)",hough,0
+error_de__v1_198526078100_0.png,ok,threshold,1
+error_de__v1_198529874544_0.png,ok,threshold,1
+error_de__v1_203274032748_0.jpg,"rejected (rim 0.61, fill 1.00)",hough,0
+error_de__v1_203792441602_0.png,ok,hough,1
+error_de__v1_203792442400_0.png,ok,hough,1
+error_de__v1_206331840318_0.jpg,"rejected (rim 0.69, fill 0.70)",hough,0
+error_de__v1_206402834495_0.png,ok,hough,1
+error_de__v1_206438315657_0.png,ok,hough,1
+error_de__v1_206438329720_0.jpg,"rejected (rim 0.70, fill 0.62)",hough,0
+error_de__v1_206438746038_0.jpg,"rejected (rim 0.75, fill 0.73)",hough,0
+error_de__v1_227058508053_0_a.png,ok,hough,2
+error_de__v1_227058508053_0_b.png,ok,hough,2
+error_de__v1_227255711770_0.png,ok,threshold,1
+error_de__v1_227266935429_0.jpg,no coin found,threshold,0
+error_de__v1_227333762273_0.jpg,"rejected (rim 0.58, fill 0.55)",hough,0
+error_de__v1_227441612934_0_a.png,ok,hough,2
+error_de__v1_227441612934_0_b.png,ok,hough,2
+error_de__v1_236647995502_0.jpg,"rejected (rim 0.92, fill 0.33)",hough,0
+error_de__v1_236948786903_0.jpg,"rejected (rim 0.74, fill 0.61)",hough,0
+error_de__v1_253235164649_0.jpg,"rejected (rim 0.99, fill 0.62)",hough,0
+error_de__v1_253969323027_0_a.png,ok,threshold,2
+error_de__v1_253969323027_0_b.png,ok,threshold,2
+error_de__v1_253972334422_0_a.png,ok,hough,2
+error_de__v1_253972334422_0_b.png,ok,hough,2
+error_de__v1_254450133050_0.png,ok,hough,1
+error_de__v1_254450152148_0_a.png,ok,threshold,2
+error_de__v1_254450152148_0_b.png,ok,threshold,2
+error_de__v1_254578718456_0_a.png,ok,hough,2
+error_de__v1_254578718456_0_b.png,ok,hough,2
+error_de__v1_254861350977_0.jpg,"rejected (rim 1.00, fill 0.65)",hough,0
+error_de__v1_254861352697_0.jpg,"rejected (rim 0.97, fill 0.64)",hough,0
+error_de__v1_254861357848_0.jpg,"rejected (rim 1.00, fill 0.71)",hough,0
+error_de__v1_254861364286_0_a.png,ok,hough,2
+error_de__v1_254861364286_0_b.png,ok,hough,2
+error_de__v1_254861408023_0.jpg,"rejected (rim 0.71, fill 0.97)",hough,0
+error_de__v1_254861413042_0_a.png,ok,hough,2
+error_de__v1_254861413042_0_b.png,ok,hough,2
+error_de__v1_254861417723_0_a.png,ok,hough,2
+error_de__v1_254861417723_0_b.png,ok,hough,2
+error_de__v1_254863754606_0.jpg,"rejected (rim 0.71, fill 0.56)",hough,0
+error_de__v1_254863758052_0.jpg,"rejected (rim 0.89, fill 0.55)",hough,0
+error_de__v1_254863762231_0.jpg,"rejected (rim 0.93, fill 0.55)",hough,0
+error_de__v1_254863782138_0.jpg,"rejected (rim 0.78, fill 0.40)",hough,0
+error_de__v1_254863793140_0_a.png,ok,hough,2
+error_de__v1_254863793140_0_b.png,ok,hough,2
+error_de__v1_254933752373_0_a.png,ok,hough,2
+error_de__v1_254933752373_0_b.png,ok,hough,2
+error_de__v1_254933757240_0.png,ok,hough,1
+error_de__v1_254933760631_0.png,ok,threshold,1
+error_de__v1_254933764319_0.png,ok,hough,1
+error_de__v1_254933770844_0_a.png,ok,hough,2
+error_de__v1_254933770844_0_b.png,ok,hough,2
+error_de__v1_254933774088_0.png,ok,hough,1
+error_de__v1_254941261018_0_a.png,ok,hough,2
+error_de__v1_254941261018_0_b.png,ok,hough,2
+error_de__v1_254941263487_0_a.png,ok,hough,2
+error_de__v1_254941263487_0_b.png,ok,hough,2
+error_de__v1_254941270977_0_a.png,ok,hough,2
+error_de__v1_254941270977_0_b.png,ok,hough,2
+error_de__v1_254941273283_0_a.png,ok,hough,2
+error_de__v1_254941273283_0_b.png,ok,hough,2
+error_de__v1_254941280122_0_a.png,ok,hough,2
+error_de__v1_254941280122_0_b.png,ok,hough,2
+error_de__v1_254941283614_0_a.png,ok,hough,2
+error_de__v1_254941283614_0_b.png,ok,hough,2
+error_de__v1_254944025208_0_a.png,ok,hough,2
+error_de__v1_254944025208_0_b.png,ok,hough,2
+error_de__v1_254945733611_0_a.png,ok,hough,2
+error_de__v1_254945733611_0_b.png,ok,hough,2
+error_de__v1_254945740028_0_a.png,ok,hough,2
+error_de__v1_254945740028_0_b.png,ok,hough,2
+error_de__v1_254945751517_0.jpg,"rejected (rim 0.72, fill 0.51)",hough,0
+error_de__v1_254945755289_0.jpg,"rejected (rim 0.82, fill 0.57)",hough,0
+error_de__v1_254945760999_0.jpg,"rejected (rim 0.79, fill 0.51)",hough,0
+error_de__v1_254945767671_0.jpg,"rejected (rim 0.94, fill 0.65)",hough,0
+error_de__v1_254945772127_0.jpg,"rejected (rim 0.83, fill 0.54)",hough,0
+error_de__v1_254945776776_0.jpg,"rejected (rim 0.85, fill 0.65)",hough,0
+error_de__v1_255143558305_0.jpg,"rejected (rim 0.97, fill 0.46)",hough,0
+error_de__v1_255206538183_0.jpg,"rejected (rim 1.00, fill 0.06)",hough,0
+error_de__v1_255458817466_0_a.png,ok,hough,2
+error_de__v1_255458817466_0_b.png,ok,hough,2
+error_de__v1_255462304353_0.png,ok,hough,1
+error_de__v1_255762946190_0.jpg,"rejected (rim 1.00, fill 0.63)",hough,0
+error_de__v1_255774685803_0.jpg,"rejected (rim 0.56, fill 0.86)",hough,0
+error_de__v1_255775585980_0_a.png,ok,hough,2
+error_de__v1_255775585980_0_b.png,ok,hough,2
+error_de__v1_255798484253_0_a.png,ok,hough,2
+error_de__v1_255798484253_0_b.png,ok,hough,2
+error_de__v1_255798496198_0.png,ok,threshold,1
+error_de__v1_255799197787_0.png,ok,hough,1
+error_de__v1_255799211294_0_a.png,ok,hough,2
+error_de__v1_255799211294_0_b.png,ok,hough,2
+error_de__v1_255799215172_0_a.png,ok,hough,2
+error_de__v1_255799215172_0_b.png,ok,hough,2
+error_de__v1_255799234876_0_a.png,ok,hough,2
+error_de__v1_255799234876_0_b.png,ok,hough,2
+error_de__v1_255806598385_0.png,ok,hough,1
+error_de__v1_255806607927_0_a.png,ok,hough,2
+error_de__v1_255806607927_0_b.png,ok,hough,2
+error_de__v1_255806623333_0_a.png,ok,hough,2
+error_de__v1_255806623333_0_b.png,ok,hough,2
+error_de__v1_255808940248_0_a.png,ok,hough,2
+error_de__v1_255808940248_0_b.png,ok,hough,2
+error_de__v1_255842198470_0_a.png,ok,hough,2
+error_de__v1_255842198470_0_b.png,ok,hough,2
+error_de__v1_255842307548_0_a.png,ok,hough,2
+error_de__v1_255842307548_0_b.png,ok,hough,2
+error_de__v1_256104235953_0.jpg,"rejected (rim 1.00, fill 0.62)",hough,0
+error_de__v1_256104239390_0.jpg,"rejected (rim 0.60, fill 0.38)",threshold,0
+error_de__v1_256140935859_0.jpg,"rejected (rim 0.31, fill 0.32)",hough,0
+error_de__v1_256149280553_0.png,ok,threshold,1
+error_de__v1_256195287375_0_a.png,ok,hough,2
+error_de__v1_256195287375_0_b.png,ok,hough,2
+error_de__v1_256201009862_0.jpg,"rejected (rim 0.58, fill 1.00)",hough,0
+error_de__v1_256201015175_0.png,ok,threshold,1
+error_de__v1_256201019959_0.png,ok,threshold,1
+error_de__v1_256201061720_0.png,ok,threshold,1
+error_de__v1_256202593606_0.png,ok,threshold,1
+error_de__v1_256202601934_0.jpg,"rejected (rim 1.00, fill 0.74)",hough,0
+error_de__v1_256202620853_0_a.png,ok,hough,2
+error_de__v1_256202620853_0_b.png,ok,hough,2
+error_de__v1_256204500456_0_a.png,ok,hough,2
+error_de__v1_256204500456_0_b.png,ok,hough,2
+error_de__v1_256204502982_0_a.png,ok,hough,2
+error_de__v1_256204502982_0_b.png,ok,hough,2
+error_de__v1_256209993964_0.png,ok,threshold,1
+error_de__v1_256219734281_0_a.png,ok,hough,2
+error_de__v1_256219734281_0_b.png,ok,hough,2
+error_de__v1_256227146354_0.png,ok,threshold,1
+error_de__v1_256227155101_0.png,ok,threshold,1
+error_de__v1_256228290713_0_a.png,ok,hough,2
+error_de__v1_256228290713_0_b.png,ok,hough,2
+error_de__v1_256255678092_0_a.png,ok,hough,2
+error_de__v1_256255678092_0_b.png,ok,hough,2
+error_de__v1_256258360521_0_a.png,ok,hough,2
+error_de__v1_256258360521_0_b.png,ok,hough,2
+error_de__v1_256295529465_0.jpg,"rejected (rim 0.56, fill 0.88)",hough,0
+error_de__v1_256365967114_0.png,ok,hough,1
+error_de__v1_256389060473_0_a.png,ok,hough,2
+error_de__v1_256389060473_0_b.png,ok,hough,2
+error_de__v1_256389850750_0.jpg,"rejected (rim 0.79, fill 0.56)",threshold,0
+error_de__v1_256389864254_0.jpg,"rejected (rim 0.83, fill 0.52)",threshold,0
+error_de__v1_256412535953_0_a.png,ok,hough,2
+error_de__v1_256412535953_0_b.png,ok,hough,2
+error_de__v1_256422137270_0_a.png,ok,hough,2
+error_de__v1_256422137270_0_b.png,ok,hough,2
+error_de__v1_256422140625_0_a.png,ok,hough,2
+error_de__v1_256422140625_0_b.png,ok,hough,2
+error_de__v1_256422149894_0_a.png,ok,hough,2
+error_de__v1_256422149894_0_b.png,ok,hough,2
+error_de__v1_256422152558_0_a.png,ok,hough,2
+error_de__v1_256422152558_0_b.png,ok,hough,2
+error_de__v1_256427863153_0_a.png,ok,hough,2
+error_de__v1_256427863153_0_b.png,ok,hough,2
+error_de__v1_256511655365_0_a.png,ok,threshold,2
+error_de__v1_256511655365_0_b.png,ok,threshold,2
+error_de__v1_256519512817_0_a.png,ok,hough,2
+error_de__v1_256519512817_0_b.png,ok,hough,2
+error_de__v1_256519519529_0.png,ok,hough,1
+error_de__v1_256519522664_0.png,ok,hough,1
+error_de__v1_256519529835_0.png,ok,threshold,1
+error_de__v1_256519535115_0.png,ok,threshold,1
+error_de__v1_256519540352_0_a.png,ok,hough,2
+error_de__v1_256519540352_0_b.png,ok,hough,2
+error_de__v1_256540774355_0.png,ok,threshold,1
+error_de__v1_256547890172_0_a.png,ok,hough,2
+error_de__v1_256547890172_0_b.png,ok,hough,2
+error_de__v1_256560041377_0_a.png,ok,hough,2
+error_de__v1_256560041377_0_b.png,ok,hough,2
+error_de__v1_256724818181_0_a.png,ok,hough,2
+error_de__v1_256724818181_0_b.png,ok,hough,2
+error_de__v1_256854480612_0.png,ok,hough,1
+error_de__v1_257358712478_0_a.png,ok,hough,2
+error_de__v1_257358712478_0_b.png,ok,hough,2
+error_de__v1_257446411985_0_a.png,ok,hough,2
+error_de__v1_257446411985_0_b.png,ok,hough,2
+error_de__v1_257460617838_0.png,ok,threshold,1
+error_de__v1_257464680284_0.png,ok,threshold,1
+error_de__v1_257566378250_0_a.png,ok,hough,2
+error_de__v1_257566378250_0_b.png,ok,hough,2
+error_de__v1_267644461506_0.png,ok,threshold,1
+error_de__v1_267658127166_0.jpg,"rejected (rim 0.78, fill 0.60)",hough,0
+error_de__v1_267723053453_0.png,ok,threshold,1
+error_de__v1_277290685928_0.jpg,"rejected (rim 0.47, fill 0.76)",threshold,0
+error_de__v1_278199918247_0.png,ok,threshold,1
+error_de__v1_278205213798_0.jpg,"rejected (rim 0.68, fill 0.80)",hough,0
+error_de__v1_278218737381_0.png,ok,hough,1
+error_de__v1_286348683305_0.png,ok,threshold,1
+error_de__v1_287311634874_0.jpg,"rejected (rim 0.60, fill 0.65)",hough,0
+error_de__v1_287317929802_0_a.png,ok,hough,2
+error_de__v1_287317929802_0_b.png,ok,hough,2
+error_de__v1_287408313571_0.png,ok,hough,1
+error_de__v1_287481909148_0.png,ok,hough,1
+error_de__v1_298517999956_0_a.png,ok,hough,2
+error_de__v1_298517999956_0_b.png,ok,hough,2
+error_de__v1_306903545433_0.png,ok,hough,1
+error_de__v1_306938265223_0.png,ok,hough,1
+error_de__v1_313973656475_0_a.png,ok,hough,2
+error_de__v1_313973656475_0_b.png,ok,hough,2
+error_de__v1_315996096461_0.png,ok,threshold,1
+error_de__v1_316596677396_0.png,ok,hough,1
+error_de__v1_316610890057_0.png,ok,threshold,1
+error_de__v1_317884774427_0_a.png,ok,hough,2
+error_de__v1_317884774427_0_b.png,ok,hough,2
+error_de__v1_318588672738_0.jpg,"rejected (rim 0.78, fill 0.79)",hough,0
+error_de__v1_318588674410_0.jpg,"rejected (rim 0.87, fill 0.75)",hough,0
+error_de__v1_318588677121_0.jpg,"rejected (rim 0.83, fill 0.82)",hough,0
+error_de__v1_318588677964_0.jpg,"rejected (rim 0.85, fill 0.83)",threshold,0
+error_de__v1_318588681372_0.png,ok,threshold,1
+error_de__v1_318588681941_0.png,ok,threshold,1
+error_de__v1_318588682570_0.jpg,"rejected (rim 0.96, fill 0.83)",threshold,0
+error_de__v1_318588683116_0.jpg,"rejected (rim 0.89, fill 0.78)",hough,0
+error_de__v1_318588685690_0.jpg,"rejected (rim 0.87, fill 0.80)",hough,0
+error_de__v1_318588691016_0.jpg,"rejected (rim 0.82, fill 0.82)",hough,0
+error_de__v1_318588692012_0.jpg,"rejected (rim 0.86, fill 0.84)",threshold,0
+error_de__v1_318588782351_0.png,ok,hough,1
+error_de__v1_318628510424_0.png,ok,hough,1
+error_de__v1_326452756044_0.png,ok,hough,1
+error_de__v1_327270843515_0.png,ok,threshold,1
+error_de__v1_335724088943_0.jpg,"rejected (rim 0.76, fill 0.72)",hough,0
+error_de__v1_336641010007_0_a.png,ok,hough,2
+error_de__v1_336641010007_0_b.png,ok,hough,2
+error_de__v1_336672927649_0.png,ok,threshold,1
+error_de__v1_336692665655_0.png,ok,threshold,1
+error_de__v1_336705839698_0.png,ok,hough,1
+error_de__v1_354928682305_0.png,ok,threshold,1
+error_de__v1_354997892030_0.png,ok,hough,1
+error_de__v1_354998741159_0.jpg,"rejected (rim 0.57, fill 0.83)",hough,0
+error_de__v1_354998849369_0.png,ok,threshold,1
+error_de__v1_355010447401_0_a.png,ok,threshold,2
+error_de__v1_355010447401_0_b.png,ok,threshold,2
+error_de__v1_355010461437_0_a.png,ok,threshold,2
+error_de__v1_355010461437_0_b.png,ok,threshold,2
+error_de__v1_355011459344_0.jpg,"rejected (rim 0.58, fill 0.73)",threshold,0
+error_de__v1_355013464950_0_a.png,ok,hough,2
+error_de__v1_355013464950_0_b.png,ok,hough,2
+error_de__v1_355021875939_0.png,ok,threshold,1
+error_de__v1_355021877968_0.png,ok,threshold,1
+error_de__v1_355021953259_0.jpg,"rejected (rim 0.90, fill 0.75)",threshold,0
+error_de__v1_355034973330_0_a.png,ok,hough,2
+error_de__v1_355034973330_0_b.png,ok,hough,2
+error_de__v1_355036957621_0_a.png,ok,hough,2
+error_de__v1_355036957621_0_b.png,ok,hough,2
+error_de__v1_355036973340_0_a.png,ok,hough,2
+error_de__v1_355036973340_0_b.png,ok,hough,2
+error_de__v1_355049041377_0.png,ok,threshold,1
+error_de__v1_355051320393_0_a.png,ok,hough,2
+error_de__v1_355051320393_0_b.png,ok,hough,2
+error_de__v1_355051380061_0.jpg,"rejected (rim 1.00, fill 0.64)",hough,0
+error_de__v1_355051383634_0.jpg,"rejected (rim 0.99, fill 0.67)",hough,0
+error_de__v1_355098142051_0_a.png,ok,hough,2
+error_de__v1_355098142051_0_b.png,ok,hough,2
+error_de__v1_355120983114_0.jpg,"rejected (rim 0.99, fill 0.82)",hough,0
+error_de__v1_355413337177_0.jpg,"rejected (rim 1.00, fill 0.58)",hough,0
+error_de__v1_355413345363_0.png,ok,hough,1
+error_de__v1_355413386618_0.png,ok,threshold,1
+error_de__v1_355464257079_0_a.png,ok,hough,2
+error_de__v1_355464257079_0_b.png,ok,hough,2
+error_de__v1_355464295237_0_a.png,ok,hough,2
+error_de__v1_355464295237_0_b.png,ok,hough,2
+error_de__v1_355464311725_0_a.png,ok,hough,2
+error_de__v1_355464311725_0_b.png,ok,hough,2
+error_de__v1_355499155115_0.png,ok,hough,1
+error_de__v1_355662479475_0.jpg,"rejected (rim 0.58, fill 0.98)",hough,0
+error_de__v1_355685575972_0_a.png,ok,hough,2
+error_de__v1_355685575972_0_b.png,ok,hough,2
+error_de__v1_355685816217_0_a.png,ok,hough,2
+error_de__v1_355685816217_0_b.png,ok,hough,2
+error_de__v1_355696088636_0_a.png,ok,hough,2
+error_de__v1_355696088636_0_b.png,ok,hough,2
+error_de__v1_355732915705_0_a.png,ok,hough,2
+error_de__v1_355732915705_0_b.png,ok,hough,2
+error_de__v1_355732934716_0_a.png,ok,hough,2
+error_de__v1_355732934716_0_b.png,ok,hough,2
+error_de__v1_355732963306_0_a.png,ok,hough,2
+error_de__v1_355732963306_0_b.png,ok,hough,2
+error_de__v1_355732972541_0.png,ok,threshold,1
+error_de__v1_355732984840_0.jpg,"rejected (rim 0.97, fill 0.76)",hough,0
+error_de__v1_355784662967_0_a.png,ok,hough,2
+error_de__v1_355784662967_0_b.png,ok,hough,2
+error_de__v1_356041329504_0_a.png,ok,hough,2
+error_de__v1_356041329504_0_b.png,ok,hough,2
+error_de__v1_356064527439_0_a.png,ok,hough,2
+error_de__v1_356064527439_0_b.png,ok,hough,2
+error_de__v1_356800826640_0.jpg,"rejected (rim 0.64, fill 0.80)",hough,0
+error_de__v1_357599505253_0.png,ok,hough,1
+error_de__v1_357892814234_0.jpg,"rejected (rim 0.96, fill 0.59)",hough,0
+error_de__v1_358302957066_0.jpg,"rejected (rim 0.62, fill 0.58)",hough,0
+error_de__v1_358372247255_0.jpg,"rejected (rim 0.99, fill 0.42)",hough,0
+error_de__v1_358633884548_0.png,ok,threshold,1
+error_de__v1_358720968640_0.png,ok,hough,1
+error_de__v1_358758446847_0.png,ok,hough,1
+error_de__v1_366210582628_0.png,ok,hough,1
+error_de__v1_366482644199_0.jpg,"rejected (rim 0.81, fill 0.68)",hough,0
+error_de__v1_377198197637_0.jpg,"rejected (rim 0.84, fill 0.93)",hough,0
+error_de__v1_377202750143_0.jpg,"rejected (rim 0.86, fill 0.80)",hough,0
+error_de__v1_377333894499_0.jpg,"rejected (rim 0.82, fill 0.68)",hough,0
+error_de__v1_377359772545_0.jpg,"rejected (rim 0.72, fill 0.82)",hough,0
+error_de__v1_389825019606_0.jpg,"rejected (rim 0.83, fill 0.77)",hough,0
+error_de__v1_389901438570_0.png,ok,threshold,1
+error_de__v1_389901638125_0.png,ok,hough,1
+error_de__v1_397632071582_0_a.png,ok,hough,2
+error_de__v1_397632071582_0_b.png,ok,hough,2
+error_de__v1_397855091022_0.jpg,"rejected (rim 0.55, fill 0.98)",hough,0
+error_de__v1_398192336084_0.png,ok,threshold,1
+error_de__v1_398200800110_0.png,ok,hough,1
+error_de__v1_406714188930_0_a.png,ok,hough,2
+error_de__v1_406714188930_0_b.png,ok,hough,2
+error_de__v1_406714213404_0_a.png,ok,hough,2
+error_de__v1_406714213404_0_b.png,ok,hough,2
+error_de__v1_406714261114_0.png,ok,hough,1
+error_de__v1_406736765556_0_a.png,ok,threshold,2
+error_de__v1_406736765556_0_b.png,ok,threshold,2
+error_de__v1_406893337181_0.png,ok,hough,1
+error_de__v1_406943905053_0.png,ok,threshold,1
+error_de__v1_406953009738_0.png,ok,threshold,1
+error_de__v1_407095330276_0.png,ok,hough,1
+error_de__v1_800027337339_0.png,ok,hough,1
+error_de__v1_800123999605_0.png,ok,hough,1
+error_de__v1_800333894206_0.jpg,"rejected (rim 0.83, fill 0.81)",hough,0
+error_de__v1_800371880205_0.png,ok,hough,1
+mule__v1_206387086567_0.png,ok,hough,1
+off_centre__v1_147148834772_0.png,ok,hough,1
+off_centre__v1_147328461137_0.png,ok,threshold,1
+off_centre__v1_157523630509_0.png,ok,threshold,1
+off_centre__v1_198494464686_0.jpg,"rejected (rim 0.51, fill 0.75)",threshold,0
+off_centre__v1_198494468518_0.jpg,"rejected (rim 0.79, fill 0.82)",hough,0
+off_centre__v1_254945742895_0.jpg,"rejected (rim 0.75, fill 0.91)",hough,0
+off_centre__v1_255459010022_0.png,ok,hough,1
+off_centre__v1_256195359849_0.jpg,"rejected (rim 0.56, fill 0.74)",hough,0
+off_centre__v1_355007837577_0_a.png,ok,hough,2
+off_centre__v1_355007837577_0_b.png,ok,hough,2
+off_centre__v1_355520541305_0_a.png,ok,threshold,2
+off_centre__v1_355520541305_0_b.png,ok,threshold,2
+off_centre__v1_355520972114_0_a.png,ok,hough,2
+off_centre__v1_355520972114_0_b.png,ok,hough,2
+off_centre__v1_377193330198_0.jpg,"rejected (rim 0.81, fill 0.79)",hough,0
+off_centre__v1_397893094131_0.jpg,"rejected (rim 0.57, fill 0.86)",hough,0
+spiegelei__v1_254944019147_0.jpg,"rejected (rim 0.99, fill 0.52)",threshold,0
+spiegelei__v1_355349741457_0.png,ok,hough,1
+spiegelei__v1_355499222738_0_a.png,ok,hough,2
+spiegelei__v1_355499222738_0_b.png,ok,hough,2
+spiegelei__v1_366203545557_0.png,ok,hough,1
+unsorted__v1_114471701119_0.png,ok,hough,1
+unsorted__v1_123802064455_426982319863.jpg,"rejected (rim 0.66, fill 0.85)",hough,0
+unsorted__v1_126134350443_0.png,ok,threshold,1
+unsorted__v1_127763557981_0.png,ok,hough,1
+unsorted__v1_135600089002_0_a.png,ok,hough,2
+unsorted__v1_135600089002_0_b.png,ok,hough,2
+unsorted__v1_147161901017_0.png,ok,hough,1
+unsorted__v1_156175862556_0.png,ok,hough,1
+unsorted__v1_156688820042_0.jpg,"rejected (rim 0.72, fill 0.84)",hough,0
+unsorted__v1_156864044569_0.jpg,"rejected (rim 0.70, fill 0.63)",hough,0
+unsorted__v1_164668170584_0.png,ok,threshold,1
+unsorted__v1_166606407203_0.png,ok,hough,1
+unsorted__v1_174586500155_0.png,ok,hough,1
+unsorted__v1_177142958325_0.jpg,"rejected (rim 0.82, fill 0.78)",hough,0
+unsorted__v1_177542474746_0.jpg,"rejected (rim 0.76, fill 0.74)",hough,0
+unsorted__v1_177822239289_0.png,ok,hough,1
+unsorted__v1_186449976955_0.png,ok,hough,1
+unsorted__v1_186855622661_0.png,ok,hough,1
+unsorted__v1_187586858987_0.jpg,"rejected (rim 0.79, fill 0.77)",hough,0
+unsorted__v1_194993063997_0.jpg,"rejected (rim 0.74, fill 0.58)",hough,0
+unsorted__v1_196160469137_0.png,ok,hough,1
+unsorted__v1_197032954399_0.jpg,"rejected (rim 0.84, fill 0.59)",hough,0
+unsorted__v1_197379184264_0.jpg,"rejected (rim 0.87, fill 0.81)",hough,0
+unsorted__v1_197943666029_0.png,ok,threshold,1
+unsorted__v1_198300846577_0.png,ok,hough,1
+unsorted__v1_198410756310_0.jpg,"rejected (rim 0.56, fill 0.67)",hough,0
+unsorted__v1_198467223699_0.png,ok,hough,1
+unsorted__v1_198468395638_0.png,ok,hough,1
+unsorted__v1_198470778311_0.png,ok,hough,1
+unsorted__v1_203869719013_0.png,ok,hough,1
+unsorted__v1_206200919943_0.png,ok,hough,1
+unsorted__v1_206300562748_0_a.png,ok,hough,2
+unsorted__v1_206300562748_0_b.png,ok,hough,2
+unsorted__v1_206319553573_0.jpg,"rejected (rim 1.00, fill 0.71)",hough,0
+unsorted__v1_206327138552_0.jpg,"rejected (rim 0.62, fill 0.64)",hough,0
+unsorted__v1_206328969837_0.png,ok,hough,1
+unsorted__v1_206336148182_0.png,ok,hough,1
+unsorted__v1_206343512168_0.png,ok,hough,1
+unsorted__v1_206343541075_0.png,ok,hough,1
+unsorted__v1_206385766366_0.png,ok,hough,1
+unsorted__v1_206387083685_0.jpg,"rejected (rim 0.71, fill 0.84)",hough,0
+unsorted__v1_206387155328_0.png,ok,hough,1
+unsorted__v1_206389416179_0.png,ok,hough,1
+unsorted__v1_206390633102_0.png,ok,hough,1
+unsorted__v1_206390812989_0.jpg,"rejected (rim 0.87, fill 0.81)",hough,0
+unsorted__v1_206400083916_0.png,ok,hough,1
+unsorted__v1_206400086012_0.png,ok,hough,1
+unsorted__v1_222255800411_521179519775.jpg,no coin found,threshold,0
+unsorted__v1_225680283591_0_a.png,ok,hough,2
+unsorted__v1_225680283591_0_b.png,ok,hough,2
+unsorted__v1_225822484240_0.jpg,"rejected (rim 0.48, fill 0.97)",hough,0
+unsorted__v1_226956113126_0.png,ok,threshold,1
+unsorted__v1_256375650343_0.png,ok,threshold,1
+unsorted__v1_256925394461_0.png,ok,hough,1
+unsorted__v1_257010401680_0.png,ok,hough,1
+unsorted__v1_257329916821_0_a.png,ok,hough,2
+unsorted__v1_257329916821_0_b.png,ok,hough,2
+unsorted__v1_257642716895_0.jpg,"rejected (rim 0.78, fill 0.72)",hough,0
+unsorted__v1_266838844464_0.png,ok,threshold,1
+unsorted__v1_266849663293_0_a.png,ok,hough,2
+unsorted__v1_266849663293_0_b.png,ok,hough,2
+unsorted__v1_267596397569_0.jpg,"rejected (rim 0.71, fill 0.94)",hough,0
+unsorted__v1_276775583532_0.png,ok,threshold,1
+unsorted__v1_277718202440_0.png,ok,hough,1
+unsorted__v1_285876521921_0.jpg,"rejected (rim 0.73, fill 0.47)",hough,0
+unsorted__v1_286784124394_0.png,ok,hough,1
+unsorted__v1_297241359450_0.png,ok,threshold,1
+unsorted__v1_297413274016_0.jpg,"rejected (rim 0.84, fill 0.79)",hough,0
+unsorted__v1_307087778455_0.png,ok,hough,1
+unsorted__v1_314847682304_0.jpg,"rejected (rim 0.59, fill 0.58)",hough,0
+unsorted__v1_317895380463_0.png,ok,hough,1
+unsorted__v1_326314501734_516028079032.png,ok,hough,1
+unsorted__v1_326389833461_516028013204.png,ok,hough,1
+unsorted__v1_326948727716_0.png,ok,hough,1
+unsorted__v1_327199304180_0.png,ok,hough,1
+unsorted__v1_327199312358_0.png,ok,hough,1
+unsorted__v1_327200828179_0_a.png,ok,hough,2
+unsorted__v1_327200828179_0_b.png,ok,hough,2
+unsorted__v1_327200830227_0.png,ok,hough,1
+unsorted__v1_327206075105_0.png,ok,hough,1
+unsorted__v1_327206079147_0.png,ok,hough,1
+unsorted__v1_327208107751_0.png,ok,hough,1
+unsorted__v1_327231524355_0.png,ok,hough,1
+unsorted__v1_327233326970_0.png,ok,hough,1
+unsorted__v1_327242209766_0.png,ok,hough,1
+unsorted__v1_327242362176_0.jpg,"rejected (rim 0.64, fill 0.84)",hough,0
+unsorted__v1_327243764060_0.png,ok,hough,1
+unsorted__v1_327244682734_0.png,ok,hough,1
+unsorted__v1_335708917535_0.jpg,"rejected (rim 0.54, fill 0.97)",hough,0
+unsorted__v1_354948346568_0.png,ok,hough,1
+unsorted__v1_355482450757_0.png,ok,threshold,1
+unsorted__v1_355482464377_0.png,ok,threshold,1
+unsorted__v1_355482476219_0.png,ok,threshold,1
+unsorted__v1_355482478627_0.png,ok,threshold,1
+unsorted__v1_355482509446_0.png,ok,threshold,1
+unsorted__v1_355860763279_0.png,ok,hough,1
+unsorted__v1_355860790940_0.jpg,"rejected (rim 0.81, fill 0.82)",hough,0
+unsorted__v1_355976872655_0.png,ok,threshold,1
+unsorted__v1_355976879441_0.png,ok,threshold,1
+unsorted__v1_355976891726_0.png,ok,threshold,1
+unsorted__v1_355976894553_0.png,ok,threshold,1
+unsorted__v1_355976898285_0.png,ok,threshold,1
+unsorted__v1_355976905172_0.png,ok,hough,1
+unsorted__v1_355976910145_0.png,ok,threshold,1
+unsorted__v1_356060007012_0.png,ok,threshold,1
+unsorted__v1_358147035696_0.png,ok,hough,1
+unsorted__v1_358147047848_0.png,ok,hough,1
+unsorted__v1_358165234937_0.png,ok,threshold,1
+unsorted__v1_376733025037_0.jpg,"rejected (rim 0.66, fill 0.76)",hough,0
+unsorted__v1_376879089936_0.png,ok,hough,1
+unsorted__v1_377290215956_0.png,ok,hough,1
+unsorted__v1_385863256325_0.jpg,"rejected (rim 0.64, fill 1.00)",hough,0
+unsorted__v1_387860557119_0.jpg,"rejected (rim 0.64, fill 0.87)",hough,0
+unsorted__v1_389529855378_0.png,ok,threshold,1
+unsorted__v1_389711481637_0.png,ok,threshold,1
+unsorted__v1_389945537540_0.png,ok,threshold,1
+unsorted__v1_389945548262_0.png,ok,threshold,1
+unsorted__v1_394434344879_663321216249.png,ok,hough,1
+unsorted__v1_396018358838_0.png,ok,threshold,1
+unsorted__v1_404934200463_0.png,ok,threshold,1
+unsorted__v1_405371726353_0.png,ok,hough,1
+wrong_planchet__v1_267653230541_0.png,ok,hough,1

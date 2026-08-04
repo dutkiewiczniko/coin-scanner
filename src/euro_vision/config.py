@@ -163,6 +163,45 @@ class RareConfig:
     flag_threshold: float = 0.80
     #: Only run rare detection on these denominations (cents). Empty = all.
     denominations: list[int] = field(default_factory=lambda: [100, 200])
+    #: Score above which a geometric striking fault is flagged, for the "errors"
+    #: backend. Measured at 0.5 on 145 real faces from a densely packed tray:
+    #: 48% of coins had a measurable outline, none of them was flagged
+    #: spuriously, and a clip covering a fifth of the rim was caught 91% of the
+    #: time (63% at a seventh). The 52% with no measurable outline are coins
+    #: whose neighbours were touching them — a tray with lanes recovers most of
+    #: those. Lower the threshold to see more and review more.
+    error_threshold: float = 0.5
+    #: At or below this mintage an issue counts as scarce. 200,000 sits in the
+    #: gap the data actually shows: the median commemorative is struck 750,000
+    #: times, while the Monaco and Vatican issues that carry a premium are in
+    #: the 15,000-100,000 range. Nothing magic about it — it is the knob to turn
+    #: if the flag list comes out too long or too short.
+    scarce_mintage: int = 200_000
+
+
+@dataclass
+class NumistaConfig:
+    #: Environment variable holding the API key. The key is never put in the
+    #: config file, which is committed; the variable name is.
+    api_key_env: str = "NUMISTA_API_KEY"
+    lang: str = "en"
+    #: Responses are cached so a repeated query costs no quota. The free tier is
+    #: 2,000 requests a month and one issuer sweep can spend a tenth of it.
+    cache_dir: str = "data/cache/numista"
+    #: How long a cached response stays good. Catalogue entries change slowly;
+    #: 0 means never expire.
+    cache_days: int = 30
+    #: Minimum gap between requests. Numista limits per second as well as per
+    #: month, and a sweep fires back to back.
+    min_interval_s: float = 1.0
+    #: Ceiling on requests any single sweep may spend, so a typo cannot burn the
+    #: month's quota. Also the guard against pulling down a "substantial part of
+    #: the database", which the terms of use forbid.
+    max_requests: int = 200
+    #: A type is a variety candidate when it was struck this fraction or less of
+    #: its largest same-year sibling. 0.25 catches the Hamburg mule (600k against
+    #: 9M, a ratio of 0.067) with room to spare.
+    outlier_ratio: float = 0.25
 
 
 @dataclass
@@ -216,6 +255,7 @@ class Config:
     classify: ClassifyConfig = field(default_factory=ClassifyConfig)
     rare: RareConfig = field(default_factory=RareConfig)
     pair: PairConfig = field(default_factory=PairConfig)
+    numista: NumistaConfig = field(default_factory=NumistaConfig)
     #: Where crops and result files are written.
     output_dir: str = "data/out"
     #: Save per-coin crops alongside the results file.
@@ -258,6 +298,7 @@ def load_config(path: str | Path | None = None) -> Config:
         classify=_build_section(ClassifyConfig, raw.get("classify", {}), "classify"),
         rare=_build_section(RareConfig, raw.get("rare", {}), "rare"),
         pair=_build_section(PairConfig, raw.get("pair", {}), "pair"),
+        numista=_build_section(NumistaConfig, raw.get("numista", {}), "numista"),
         output_dir=raw.get("output_dir", "data/out"),
         save_crops=raw.get("save_crops", True),
     )

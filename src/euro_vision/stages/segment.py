@@ -167,8 +167,9 @@ class SegmentStage(Stage):
             if not (cfg.min_radius <= radius <= cfg.max_radius):
                 continue
 
+            profile = None
             if cfg.radial_measure:
-                radius = _radial_radius(
+                radius, profile = _radial_radius(
                     gray, centre[0], centre[1], radius, tray_level, cfg
                 )
                 if not (cfg.min_radius <= radius <= cfg.max_radius):
@@ -180,6 +181,7 @@ class SegmentStage(Stage):
                     y=int(centre[1]),
                     radius=int(round(radius)),
                     confidence=1.0,
+                    radial_profile=None if profile is None else profile.tolist(),
                 )
             )
         return detections
@@ -231,8 +233,11 @@ def _radial_radius(
     hint: float,
     tray_level: float,
     cfg,
-) -> float:
+) -> tuple[float, "np.ndarray | None"]:
     """Measure a coin's radius by walking outward from its centre.
+
+    Returns the median radius and the per-ray radii it came from, the latter
+    being what a striking-error check needs — see `euro_vision.errors`.
 
     Watershed finds centres reliably but measures radius as the inscribed radius
     of the thresholded mask — and that threshold also strips the coin's dim outer
@@ -253,11 +258,11 @@ def _radial_radius(
         max(0, int(cx - hint * 0.4)):int(cx + hint * 0.4),
     ]
     if inner.size == 0:
-        return hint
+        return hint, None
     coin_level = float(np.median(inner))
     edge_level = tray_level + (coin_level - tray_level) * cfg.radial_edge_fraction
     if coin_level <= tray_level:
-        return hint
+        return hint, None
 
     angles = np.linspace(0, 2 * np.pi, cfg.radial_rays, endpoint=False)
     steps = np.arange(hint * 0.5, limit, 0.5)
@@ -276,7 +281,10 @@ def _radial_radius(
     hit[~below.any(axis=1)] = len(steps) - 1  # ray never left the metal
     radii = hint * 0.5 + hit * 0.5
 
-    return float(np.median(radii))
+    # The per-ray radii go back with the median. A ray blocked by a touching
+    # neighbour overshoots and a clipped edge falls short, so the two are told
+    # apart by sign — but only while the individual readings survive.
+    return float(np.median(radii)), radii
 
 
 def _refine(

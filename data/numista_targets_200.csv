@@ -1,0 +1,45 @@
+# Batch 1 — 2 EUR. Targets to look up, NOT facts.
+#
+# Every mintage comes back from Numista; nothing in this file asserts one. A
+# row is a search — "go and see what Numista has for this" — so the figures stay
+# sourced and citable, and a target that turns out to be common is dropped
+# rather than silently entering the database as rare.
+#
+# Why these coins. Three groups, for three different reasons:
+#
+#   varieties   Design faults that ran through a whole batch. Not in Wikipedia
+#               at all, so Numista is the only source. The reason we are here.
+#   micro-state Monaco, Vatican, San Marino and Andorra strike commemoratives in
+#               the tens of thousands against a normal 750,000, and they do
+#               circulate. The coins actually worth finding in a tray.
+#   first-year  Early Greek, Cypriot, Maltese and Slovenian issues, scarce by
+#               accident of a small initial mintage rather than by design.
+#
+# denomination is in cents. issuer is a Numista issuer code — see EURO_ISSUERS,
+# and note the separators are not guessable (saint-marin, pays-bas). Blank
+# searches every issuer. Use semicolons in notes; commas break the columns.
+
+denomination,issuer,query,note
+# -- varieties and mules -------------------------------------------------
+200,allemagne,2 euro Hamburg mule,2008 Stuttgart struck the old map — KM# A261
+200,allemagne,2 euro Bundeslander mule,other German state-series mules
+200,grece,2 euro 2002 S,the "S" in a star — struck in Finland; scarce
+200,belgique,2 euro mule,Belgian die pairing errors
+200,luxembourg,2 euro variety,Luxembourg relief/photo variants
+200,,2 euro mule,catch mules from any issuer
+200,,2 euro error variety,catch varieties the mule search misses
+# -- micro-states --------------------------------------------------------
+200,monaco,2 euro Grace Kelly,2007 — the standout euro rarity
+200,monaco,2 euro commemorative,Monaco's other commemoratives are all tiny
+200,vatican,2 euro commemorative,Vatican commemoratives run small
+200,saint-marin,2 euro commemorative,San Marino commemoratives run small
+200,andorre,2 euro,Andorra only began striking in 2014
+# -- scarce first-year and standard issues -------------------------------
+200,grece,2 euro 2002,first Greek year
+200,chypre,2 euro 2008,Cyprus first year
+200,malte,2 euro 2008,Malta first year
+200,slovenie,2 euro 2007,Slovenia first year
+200,estonie,2 euro 2011,Estonia first year
+200,lettonie,2 euro 2014,Latvia first year
+200,lituanie,2 euro 2015,Lithuania first year
+200,croatie,2 euro 2023,Croatia first year

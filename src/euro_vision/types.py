@@ -23,6 +23,12 @@ class Detection:
     y: int
     radius: int
     confidence: float = 1.0
+    #: Distance to the coin's edge along each ray, in pixels, in the order the
+    #: watershed backend cast them. Kept because `radius` is their median, and a
+    #: clipped planchet is exactly the case the median is designed to hide. Only
+    #: measurable here, on the tray image: the normalised crop is masked to a
+    #: circle, which makes every coin round by construction.
+    radial_profile: Optional[list[float]] = None
 
     @property
     def bbox(self) -> tuple[int, int, int, int]:
